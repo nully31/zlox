@@ -31,11 +31,15 @@ pub const Chunk = struct {
 
 test "writing to a chunk" {
     var chunk = Chunk{};
-    chunk.write('a');
-    chunk.write('b');
-    chunk.write('!');
-    try std.testing.expectEqual(chunk.code[0], 'a');
-    try std.testing.expectEqual(chunk.code[1], 'b');
-    try std.testing.expectEqual(chunk.code[2], '!');
-    try std.testing.expectEqual(chunk.code.len, 8);
+    comptime var i = 0;
+    inline while (i < 10) : (i += 1) {
+        chunk.write('a' + i);
+        try std.testing.expectEqual(chunk.code[i], 'a' + i);
+        if (i < 8) {
+            try std.testing.expectEqual(chunk.code.len, 8);
+        } else {
+            try std.testing.expectEqual(chunk.code.len, 16);
+        }
+        try std.testing.expectEqual(chunk.code.len, chunk.capacity);
+    }
 }
