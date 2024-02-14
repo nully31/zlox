@@ -2,10 +2,12 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 var gpa = std.heap.GeneralPurposeAllocator(.{}){};
 
+/// Opcode enum.
 pub const Opcode = enum {
     OP_RETURN,
 };
 
+/// A dynamic array structure of instructions.
 pub const Chunk = struct {
     count: u32 = 0,
     capacity: u32 = 0,
