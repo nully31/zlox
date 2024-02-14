@@ -28,3 +28,14 @@ pub const Chunk = struct {
         self.count += 1;
     }
 };
+
+test "writing to a chunk" {
+    var chunk = Chunk{};
+    chunk.write('a');
+    chunk.write('b');
+    chunk.write('!');
+    try std.testing.expectEqual(chunk.code[0], 'a');
+    try std.testing.expectEqual(chunk.code[1], 'b');
+    try std.testing.expectEqual(chunk.code[2], '!');
+    try std.testing.expectEqual(chunk.code.len, 8);
+}
