@@ -1,6 +1,7 @@
 const std = @import("std");
 const Opcode = @import("chunk.zig").Opcode;
 const Chunk = @import("chunk.zig").Chunk;
+const ValueArray = @import("value.zig").ValueArray;
 const debug = @import("debug.zig");
 
 pub fn main() !void {
@@ -21,7 +22,8 @@ pub fn main() !void {
 
 test "simple chunk" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    var chunk = Chunk{ .allocator = gpa.allocator() };
+    const allocator = gpa.allocator();
+    var chunk = Chunk{ .allocator = allocator, .constants = ValueArray{ .allocator = allocator } };
     defer {
         chunk.free();
         _ = gpa.deinit();

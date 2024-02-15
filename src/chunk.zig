@@ -1,5 +1,7 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
+const ValueArray = @import("value.zig").ValueArray;
+const VT = @import("value.zig").VT;
 
 /// Opcode enum.
 pub const Opcode = enum(u8) {
@@ -7,13 +9,17 @@ pub const Opcode = enum(u8) {
 };
 
 /// A dynamic array structure of instructions.
-/// An allocator must be passed when initializing for dynamic memory allocation.
+/// An allocator must be passed to BOTH this struct and the `ValueArray` struct inside
+/// when initializing for dynamic memory allocation.
 pub const Chunk = struct {
+    const Self = @This();
+
     count: usize = 0,
     code: []u8 = &.{},
+    constants: ValueArray,
     allocator: Allocator,
 
-    pub fn write(self: *Chunk, byte: u8) !void {
+    pub fn write(self: *Self, byte: u8) !void {
         // if the current chunk doesn't have enough capacity, then grow itself by doubling the capacity.
         if (self.code.len < self.count + 1) {
             const new_capacity = if (self.code.len < 8) 8 else self.code.len * 2;
@@ -27,16 +33,23 @@ pub const Chunk = struct {
         self.count += 1;
     }
 
-    pub fn free(self: *Chunk) void {
+    pub fn free(self: *Self) void {
+        self.constants.free();
         self.allocator.free(self.code);
         self.count = 0;
         self.code.len = 0;
+    }
+
+    pub fn addConstant(self: *Self, value: VT) usize {
+        self.constants.write(value);
+        return self.constants.count - 1;
     }
 };
 
 test "writing to a chunk" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    var chunk = Chunk{ .allocator = gpa.allocator() };
+    const allocator = gpa.allocator();
+    var chunk = Chunk{ .allocator = allocator, .constants = ValueArray{ .allocator = allocator } };
     defer {
         chunk.free();
         _ = gpa.deinit();
@@ -57,7 +70,8 @@ test "writing to a chunk" {
 
 test "sample chunk" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    var chunk = Chunk{ .allocator = gpa.allocator() };
+    const allocator = gpa.allocator();
+    var chunk = Chunk{ .allocator = allocator, .constants = ValueArray{ .allocator = allocator } };
     defer {
         chunk.free();
         _ = gpa.deinit();
