@@ -1,4 +1,7 @@
 const std = @import("std");
+const Opcode = @import("chunk.zig").Opcode;
+const Chunk = @import("chunk.zig").Chunk;
+const debug = @import("debug.zig");
 
 pub fn main() !void {
     // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
@@ -16,9 +19,15 @@ pub fn main() !void {
     try bw.flush(); // don't forget to flush!
 }
 
-test "simple test" {
-    var list = std.ArrayList(i32).init(std.testing.allocator);
-    defer list.deinit(); // try commenting this out and see if zig detects the memory leak!
-    try list.append(42);
-    try std.testing.expectEqual(@as(i32, 42), list.pop());
+test "simple chunk" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    var chunk = Chunk{ .allocator = gpa.allocator() };
+    defer {
+        chunk.free();
+        _ = gpa.deinit();
+    }
+    errdefer std.os.exit(1);
+
+    try chunk.write(@intFromEnum(Opcode.OP_RETURN));
+    debug.disassembleChunk(&chunk, "test chunk");
 }
