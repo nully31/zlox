@@ -1,9 +1,10 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+
+pub const ChunkErr = error{AllocFail};
 
 /// Opcode enum.
-pub const Opcode = enum {
+pub const Opcode = enum(u8) {
     OP_RETURN,
 };
 
@@ -12,15 +13,15 @@ pub const Chunk = struct {
     count: usize = 0,
     capacity: usize = 0,
     code: []u8 = &.{},
-    allocator: Allocator = gpa.allocator(),
+    allocator: Allocator,
 
-    pub fn write(self: *Chunk, byte: u8) void {
+    pub fn write(self: *Chunk, byte: u8) !void {
         // if the current chunk doesn't have enough capacity, then grow itself by doubling the capacity.
         if (self.code.len < self.count + 1) {
             self.capacity = if (self.code.len < 8) 8 else self.code.len * 2;
             self.code = self.allocator.realloc(self.code, self.capacity) catch {
                 self.allocator.free(self.code);
-                std.os.exit(1);
+                return ChunkErr.AllocFail;
             };
         }
 
@@ -36,10 +37,13 @@ pub const Chunk = struct {
 };
 
 test "writing to a chunk" {
-    var chunk = Chunk{};
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    errdefer std.os.exit(1);
+    var chunk = Chunk{ .allocator = gpa.allocator() };
     comptime var i = 0;
     inline while (i < 10) : (i += 1) {
-        chunk.write('a' + i);
+        try chunk.write('a' + i);
         try std.testing.expectEqual(chunk.code[i], 'a' + i);
         if (i < 8) {
             try std.testing.expectEqual(chunk.code.len, 8);
@@ -48,4 +52,17 @@ test "writing to a chunk" {
         }
         try std.testing.expectEqual(chunk.code.len, chunk.capacity);
     }
+}
+
+test "sample chunk" {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    errdefer std.os.exit(1);
+    var chunk = Chunk{ .allocator = gpa.allocator() };
+    try chunk.write(@intFromEnum(Opcode.OP_RETURN));
+    const op: Opcode = @enumFromInt(chunk.code[0]);
+    try std.testing.expectEqual(Opcode.OP_RETURN, op);
+    chunk.free();
+    std.debug.print("code: {*} {}\n", .{ chunk.code, chunk.code.len });
+    try std.testing.expectEqual(chunk.capacity, 0);
 }
