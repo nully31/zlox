@@ -27,6 +27,12 @@ pub const Chunk = struct {
         self.code[self.count] = byte;
         self.count += 1;
     }
+
+    pub fn free(self: *Chunk) void {
+        self.allocator.free(self.code);
+        self.count = 0;
+        self.capacity = 0;
+    }
 };
 
 test "writing to a chunk" {
