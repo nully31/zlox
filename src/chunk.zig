@@ -71,6 +71,5 @@ test "sample chunk" {
     const op: Opcode = @enumFromInt(chunk.code[0]);
     try std.testing.expectEqual(Opcode.OP_RETURN, op);
     chunk.free();
-    std.debug.print("code: {*} {}\n", .{ chunk.code, chunk.code.len });
     try std.testing.expectEqual(0, chunk.code.len);
 }
