@@ -1,8 +1,9 @@
 const std = @import("std");
-const Opcode = @import("chunk.zig").Opcode;
-const Chunk = @import("chunk.zig").Chunk;
-const ValueArray = @import("value.zig").ValueArray;
+const ch = @import("chunk.zig");
+const val = @import("value.zig");
 const debug = @import("debug.zig");
+const Chunk = ch.Chunk;
+const Opcode = ch.Opcode;
 
 pub fn main() !void {
     // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
@@ -23,7 +24,7 @@ pub fn main() !void {
 test "simple chunk" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    var chunk = Chunk{ .allocator = allocator, .constants = ValueArray{ .allocator = allocator } };
+    var chunk = Chunk{ .allocator = allocator, .constants = val.ValueArray{ .allocator = allocator } };
     defer {
         chunk.free();
         _ = gpa.deinit();

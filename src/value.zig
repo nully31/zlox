@@ -1,7 +1,6 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-
-const VT = f64;
+const T = f64;
 
 /// A dynamic array structure of constants.
 /// Essentially the same as `Chunk`, thus an allocator must be passed
@@ -10,10 +9,10 @@ pub const ValueArray = struct {
     const Self = @This();
 
     count: usize = 0,
-    values: []VT = &.{},
+    values: []T = &.{},
     allocator: Allocator,
 
-    pub fn write(self: *Self, value: VT) !void {
+    pub fn write(self: *Self, value: T) !void {
         // if the current chunk doesn't have enough capacity, then grow itself by doubling the capacity.
         if (self.values.len < self.count + 1) {
             const new_capacity = if (self.values.len < 8) 8 else self.values.len * 2;

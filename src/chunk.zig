@@ -1,7 +1,8 @@
 const std = @import("std");
+const val = @import("value.zig");
 const Allocator = std.mem.Allocator;
-const ValueArray = @import("value.zig").ValueArray;
-const VT = @import("value.zig").VT;
+const ValueArray = val.ValueArray;
+const VT = val.T;
 
 /// Opcode enum.
 pub const Opcode = enum(u8) {

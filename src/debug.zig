@@ -1,6 +1,7 @@
 const std = @import("std");
-const Opcode = @import("chunk.zig").Opcode;
-const Chunk = @import("chunk.zig").Chunk;
+const ch = @import("chunk.zig");
+const Opcode = ch.Opcode;
+const Chunk = ch.Chunk;
 
 /// Disassembles a given chunk and prints it along with a little header.
 pub fn disassembleChunk(chunk: *Chunk, name: []const u8) void {
