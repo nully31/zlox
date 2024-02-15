@@ -8,6 +8,8 @@ pub const Opcode = enum(u8) {
     OP_RETURN,
 };
 
+pub const Data = union(Opcode) { opcode: Opcode, value: u8 };
+
 /// A dynamic array structure of instructions.
 pub const Chunk = struct {
     count: usize = 0,
