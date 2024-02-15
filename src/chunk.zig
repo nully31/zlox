@@ -9,6 +9,7 @@ pub const Opcode = enum(u8) {
 };
 
 /// A dynamic array structure of instructions.
+/// An allocator must be passed when initializing for dynamic memory allocation.
 pub const Chunk = struct {
     count: usize = 0,
     capacity: usize = 0,
