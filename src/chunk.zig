@@ -10,7 +10,6 @@ pub const Opcode = enum(u8) {
 /// An allocator must be passed when initializing for dynamic memory allocation.
 pub const Chunk = struct {
     count: usize = 0,
-    capacity: usize = 0,
     code: []u8 = &.{},
     allocator: Allocator,
 
