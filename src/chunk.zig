@@ -1,7 +1,7 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
 
-pub const ChunkErr = error{AllocFail};
+pub const ChunkErr = error{OutOfMemory};
 
 /// Opcode enum.
 pub const Opcode = enum(u8) {
@@ -23,7 +23,7 @@ pub const Chunk = struct {
             self.capacity = if (self.code.len < 8) 8 else self.code.len * 2;
             self.code = self.allocator.realloc(self.code, self.capacity) catch {
                 self.allocator.free(self.code);
-                return ChunkErr.AllocFail;
+                return ChunkErr.OutOfMemory;
             };
         }
 
