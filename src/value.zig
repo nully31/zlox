@@ -37,7 +37,6 @@ pub const ValueArray = struct {
     pub fn free(self: *Self) void {
         self.allocator.free(self.values);
         self.count = 0;
-        self.values.len = 0;
     }
 
     pub fn print(self: *Self, address: usize) void {

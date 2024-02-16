@@ -18,7 +18,8 @@ pub const Chunk = struct {
 
     count: usize = 0,
     code: []u8 = &.{},
-    constants: ValueArray = undefined,
+    lines: []usize = &.{}, // Indicates which lines the instructions occur in the source code
+    constants: ValueArray = undefined, // Constant pool
     allocator: Allocator,
 
     pub fn init(allocator: Allocator) Self {
@@ -31,7 +32,11 @@ pub const Chunk = struct {
         return self.code[address];
     }
 
-    pub fn write(self: *Self, byte: u8) !void {
+    pub fn getLine(self: *Self, address: usize) usize {
+        return self.lines[address];
+    }
+
+    pub fn write(self: *Self, byte: u8, line: usize) !void {
         // If the current chunk doesn't have enough capacity, then grow itself by doubling the capacity.
         if (self.code.len < self.count + 1) {
             const new_capacity = if (self.code.len < 8) 8 else self.code.len * 2;
@@ -39,9 +44,14 @@ pub const Chunk = struct {
                 self.allocator.free(self.code);
                 return err;
             };
+            self.lines = self.allocator.realloc(self.lines, new_capacity) catch |err| {
+                self.allocator.free(self.lines);
+                return err;
+            };
         }
 
         self.code[self.count] = byte;
+        self.lines[self.count] = line;
         self.count += 1;
     }
 
@@ -53,8 +63,8 @@ pub const Chunk = struct {
     pub fn free(self: *Self) void {
         self.constants.free();
         self.allocator.free(self.code);
+        self.allocator.free(self.lines);
         self.count = 0;
-        self.code.len = 0;
     }
 };
 
@@ -70,7 +80,7 @@ test "writing to a chunk" {
 
     comptime var i = 0;
     inline while (i < 10) : (i += 1) {
-        try chunk.write(@intFromEnum(Opcode.OP_RETURN));
+        try chunk.write(@intFromEnum(Opcode.OP_RETURN), 123);
         const op: Opcode = @enumFromInt(chunk.code[i]);
         try std.testing.expectEqual(Opcode.OP_RETURN, op);
         if (i < 8) {

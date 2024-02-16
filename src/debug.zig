@@ -16,6 +16,11 @@ pub fn disassembleChunk(chunk: *Chunk, name: []const u8) void {
 /// Prints the instruction at the given offset in the bytecode.
 pub fn disassembleInstruction(chunk: *Chunk, offset: usize) usize {
     std.debug.print("{d:0>4} ", .{offset});
+    if (offset > 0 and (chunk.getLine(offset) == chunk.getLine(offset - 1))) {
+        std.debug.print("{s: >4} ", .{"|"});
+    } else {
+        std.debug.print("{d: >4} ", .{chunk.getLine(offset)});
+    }
 
     const instruction: u8 = chunk.read(offset);
     switch (instruction) {
