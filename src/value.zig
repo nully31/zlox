@@ -41,6 +41,6 @@ pub const ValueArray = struct {
 
     /// Prints a value read from the specified index in the pool
     pub fn print(self: *Self, index: u8) void {
-        std.debug.print("{any}", .{self.get(index)});
+        std.debug.print("{d}", .{self.get(index)});
     }
 };
