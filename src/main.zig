@@ -32,5 +32,8 @@ test "simple chunk" {
     errdefer std.os.exit(1);
 
     try chunk.write(@intFromEnum(Opcode.OP_RETURN));
+    const constant = try chunk.addConstant(1.2);
+    try chunk.write(@intFromEnum(Opcode.OP_CONSTANT));
+    try chunk.write(@truncate(constant));
     debug.disassembleChunk(&chunk, "test chunk");
 }

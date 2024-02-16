@@ -1,6 +1,6 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
-const T = f64;
+pub const T = f64;
 
 /// A dynamic array structure for constants.
 /// Essentially the same as `Chunk`, thus an allocator must be passed
@@ -38,5 +38,9 @@ pub const ValueArray = struct {
         self.allocator.free(self.values);
         self.count = 0;
         self.values.len = 0;
+    }
+
+    pub fn print(self: *Self, address: usize) void {
+        std.debug.print("{any}", .{self.read(address)});
     }
 };

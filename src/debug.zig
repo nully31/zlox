@@ -17,14 +17,23 @@ pub fn disassembleChunk(chunk: *Chunk, name: []const u8) void {
 pub fn disassembleInstruction(chunk: *Chunk, offset: usize) usize {
     std.debug.print("{d:0>4} ", .{offset});
 
-    const instruction: u8 = chunk.code[offset];
+    const instruction: u8 = chunk.read(offset);
     switch (instruction) {
+        @intFromEnum(Opcode.OP_CONSTANT) => return constantInstruction("OP_CONSTANT", chunk, offset),
         @intFromEnum(Opcode.OP_RETURN) => return simpleInstruction("OP_RETURN", offset),
         else => {
             std.debug.print("Unknown opcode {d}\n", .{instruction});
             return offset + 1;
         },
     }
+}
+
+fn constantInstruction(name: []const u8, chunk: *Chunk, offset: usize) usize {
+    const constant = chunk.read(offset + 1);
+    std.debug.print("{s: <16} {d: >4} '", .{ name, constant });
+    chunk.constants.print(constant);
+    std.debug.print("'\n", .{});
+    return offset + 2;
 }
 
 fn simpleInstruction(name: []const u8, offset: usize) usize {

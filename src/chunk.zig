@@ -6,6 +6,7 @@ const VT = val.T;
 
 /// Opcode enum.
 pub const Opcode = enum(u8) {
+    OP_CONSTANT,
     OP_RETURN,
 };
 
@@ -44,16 +45,16 @@ pub const Chunk = struct {
         self.count += 1;
     }
 
+    pub fn addConstant(self: *Self, value: VT) !usize {
+        try self.constants.write(value);
+        return self.constants.count - 1;
+    }
+
     pub fn free(self: *Self) void {
         self.constants.free();
         self.allocator.free(self.code);
         self.count = 0;
         self.code.len = 0;
-    }
-
-    pub fn addConstant(self: *Self, value: VT) usize {
-        self.constants.write(value);
-        return self.constants.count - 1;
     }
 };
 
