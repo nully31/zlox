@@ -55,7 +55,7 @@ pub const Chunk = struct {
         self.count += 1;
     }
 
-    pub fn addConstant(self: *Self, value: VT) !usize {
+    pub fn addConstant(self: *Self, value: VT) !u8 {
         try self.constants.write(value);
         return self.constants.count - 1;
     }

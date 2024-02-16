@@ -8,7 +8,7 @@ pub const T = f64;
 pub const ValueArray = struct {
     const Self = @This();
 
-    count: usize = 0,
+    count: u8 = 0,
     values: []T = &.{},
     allocator: Allocator,
 
@@ -16,8 +16,8 @@ pub const ValueArray = struct {
         return .{ .allocator = allocator };
     }
 
-    pub fn read(self: *Self, address: usize) T {
-        return self.values[address];
+    pub fn get(self: *Self, index: u8) T {
+        return self.values[index];
     }
 
     pub fn write(self: *Self, value: T) !void {
@@ -39,7 +39,8 @@ pub const ValueArray = struct {
         self.count = 0;
     }
 
-    pub fn print(self: *Self, address: usize) void {
-        std.debug.print("{any}", .{self.read(address)});
+    /// Prints a value read from the specified index in the pool
+    pub fn print(self: *Self, index: u8) void {
+        std.debug.print("{any}", .{self.get(index)});
     }
 };

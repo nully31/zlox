@@ -33,7 +33,7 @@ test "simple chunk" {
 
     try chunk.write(@intFromEnum(Opcode.OP_CONSTANT), 123);
     const constant = try chunk.addConstant(1.2);
-    try chunk.write(@truncate(constant), 123);
+    try chunk.write(constant, 123);
 
     try chunk.write(@intFromEnum(Opcode.OP_RETURN), 123);
     debug.disassembleChunk(&chunk, "test chunk");
