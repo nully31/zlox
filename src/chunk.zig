@@ -13,6 +13,7 @@ pub const Opcode = enum(u8) {
     OP_DIVIDE,
     OP_NEGATE,
     OP_RETURN,
+    _,
 };
 
 /// A dynamic array structure for instructions.

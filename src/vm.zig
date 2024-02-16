@@ -71,16 +71,31 @@ pub const VM = struct {
                     const constant = self.chunk.constants.get(self.chunk.read(self.ip));
                     self.ip += 1;
                     self.push(constant);
-                    std.debug.print("\n", .{});
                 },
+                .OP_ADD => self.binaryOp('+'),
+                .OP_SUBTRACT => self.binaryOp('-'),
+                .OP_MULTIPLY => self.binaryOp('*'),
+                .OP_DIVIDE => self.binaryOp('/'),
                 .OP_NEGATE => self.push(-self.pop()),
                 .OP_RETURN => {
                     // Note: to be changed later
                     std.debug.print("{d}\n", .{self.pop()});
                     return InterpretResult.INTERPRET_OK;
                 },
-                else => continue,
+                _ => continue,
             }
+        }
+    }
+
+    fn binaryOp(self: *Self, op: u8) void {
+        const b = self.pop();
+        const a = self.pop();
+        switch (op) {
+            '+' => self.push(a + b),
+            '-' => self.push(a - b),
+            '*' => self.push(a * b),
+            '/' => self.push(a / b),
+            else => return,
         }
     }
 };
