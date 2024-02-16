@@ -65,15 +65,16 @@ pub const VM = struct {
                 _ = debug.disassembleInstruction(self.chunk, self.ip);
             }
             self.ip += 1;
-            switch (instruction) {
-                @intFromEnum(Opcode.OP_CONSTANT) => {
+            const opcode: Opcode = @enumFromInt(instruction);
+            switch (opcode) {
+                .OP_CONSTANT => {
                     const constant = self.chunk.constants.get(self.chunk.read(self.ip));
                     self.ip += 1;
                     self.push(constant);
                     std.debug.print("\n", .{});
                 },
-                @intFromEnum(Opcode.OP_NEGATE) => self.push(-self.pop()),
-                @intFromEnum(Opcode.OP_RETURN) => {
+                .OP_NEGATE => self.push(-self.pop()),
+                .OP_RETURN => {
                     // Note: to be changed later
                     std.debug.print("{d}\n", .{self.pop()});
                     return InterpretResult.INTERPRET_OK;
