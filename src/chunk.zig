@@ -31,7 +31,7 @@ pub const Chunk = struct {
     }
 
     pub fn write(self: *Self, byte: u8) !void {
-        // if the current chunk doesn't have enough capacity, then grow itself by doubling the capacity.
+        // If the current chunk doesn't have enough capacity, then grow itself by doubling the capacity.
         if (self.code.len < self.count + 1) {
             const new_capacity = if (self.code.len < 8) 8 else self.code.len * 2;
             self.code = self.allocator.realloc(self.code, new_capacity) catch |err| {

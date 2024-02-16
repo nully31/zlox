@@ -21,7 +21,7 @@ pub const ValueArray = struct {
     }
 
     pub fn write(self: *Self, value: T) !void {
-        // if the current chunk doesn't have enough capacity, then grow itself by doubling the capacity.
+        // If the current chunk doesn't have enough capacity, then grow itself by doubling the capacity.
         if (self.values.len < self.count + 1) {
             const new_capacity = if (self.values.len < 8) 8 else self.values.len * 2;
             self.values = self.allocator.realloc(self.values, new_capacity) catch |err| {
