@@ -24,7 +24,7 @@ pub fn main() !void {
 test "simple chunk" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    var chunk = Chunk{ .allocator = allocator, .constants = val.ValueArray{ .allocator = allocator } };
+    var chunk = Chunk.init(allocator);
     defer {
         chunk.free();
         _ = gpa.deinit();

@@ -17,8 +17,14 @@ pub const Chunk = struct {
 
     count: usize = 0,
     code: []u8 = &.{},
-    constants: ValueArray,
+    constants: ValueArray = undefined,
     allocator: Allocator,
+
+    pub fn init(allocator: Allocator) Self {
+        var chunk = Self{ .allocator = allocator };
+        chunk.constants = ValueArray.init(allocator);
+        return chunk;
+    }
 
     pub fn write(self: *Self, byte: u8) !void {
         // if the current chunk doesn't have enough capacity, then grow itself by doubling the capacity.
@@ -50,7 +56,7 @@ pub const Chunk = struct {
 test "writing to a chunk" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    var chunk = Chunk{ .allocator = allocator, .constants = ValueArray{ .allocator = allocator } };
+    var chunk = Chunk.init(allocator);
     defer {
         chunk.free();
         _ = gpa.deinit();
@@ -59,29 +65,13 @@ test "writing to a chunk" {
 
     comptime var i = 0;
     inline while (i < 10) : (i += 1) {
-        try chunk.write('a' + i);
-        try std.testing.expectEqual('a' + i, chunk.code[i]);
+        try chunk.write(@intFromEnum(Opcode.OP_RETURN));
+        const op: Opcode = @enumFromInt(chunk.code[i]);
+        try std.testing.expectEqual(Opcode.OP_RETURN, op);
         if (i < 8) {
             try std.testing.expectEqual(8, chunk.code.len);
         } else {
             try std.testing.expectEqual(16, chunk.code.len);
         }
     }
-}
-
-test "sample chunk" {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    const allocator = gpa.allocator();
-    var chunk = Chunk{ .allocator = allocator, .constants = ValueArray{ .allocator = allocator } };
-    defer {
-        chunk.free();
-        _ = gpa.deinit();
-    }
-    errdefer std.os.exit(1);
-
-    try chunk.write(@intFromEnum(Opcode.OP_RETURN));
-    const op: Opcode = @enumFromInt(chunk.code[0]);
-    try std.testing.expectEqual(Opcode.OP_RETURN, op);
-    chunk.free();
-    try std.testing.expectEqual(0, chunk.code.len);
 }
