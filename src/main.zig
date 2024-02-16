@@ -2,6 +2,7 @@ const std = @import("std");
 const ch = @import("chunk.zig");
 const val = @import("value.zig");
 const debug = @import("debug.zig");
+const VM = @import("vm.zig").VM;
 const Chunk = ch.Chunk;
 const Opcode = ch.Opcode;
 
@@ -25,16 +26,18 @@ test "simple chunk" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     var chunk = Chunk.init(allocator);
+    var vm = VM.init();
     defer {
+        vm.free();
         chunk.free();
         _ = gpa.deinit();
     }
     errdefer std.os.exit(1);
 
     try chunk.write(@intFromEnum(Opcode.OP_CONSTANT), 123);
-    const constant = try chunk.addConstant(1.2);
-    try chunk.write(constant, 123);
+    try chunk.write(try chunk.addConstant(1.2), 123);
 
     try chunk.write(@intFromEnum(Opcode.OP_RETURN), 123);
     debug.disassembleChunk(&chunk, "test chunk");
+    _ = vm.interpret(&chunk);
 }
