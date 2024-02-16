@@ -16,6 +16,10 @@ pub const ValueArray = struct {
         return .{ .allocator = allocator };
     }
 
+    pub fn read(self: *Self, address: usize) T {
+        return self.values[address];
+    }
+
     pub fn write(self: *Self, value: T) !void {
         // if the current chunk doesn't have enough capacity, then grow itself by doubling the capacity.
         if (self.values.len < self.count + 1) {

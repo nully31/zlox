@@ -26,6 +26,10 @@ pub const Chunk = struct {
         return chunk;
     }
 
+    pub fn read(self: *Self, address: usize) u8 {
+        return self.code[address];
+    }
+
     pub fn write(self: *Self, byte: u8) !void {
         // if the current chunk doesn't have enough capacity, then grow itself by doubling the capacity.
         if (self.code.len < self.count + 1) {
