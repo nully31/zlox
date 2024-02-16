@@ -36,6 +36,7 @@ test "simple chunk" {
 
     try chunk.write(@intFromEnum(Opcode.OP_CONSTANT), 123);
     try chunk.write(try chunk.addConstant(1.2), 123);
+    try chunk.write(@intFromEnum(Opcode.OP_NEGATE), 123);
 
     try chunk.write(@intFromEnum(Opcode.OP_RETURN), 123);
     _ = vm.interpret(&chunk);

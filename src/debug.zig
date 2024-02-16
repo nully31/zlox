@@ -25,6 +25,7 @@ pub fn disassembleInstruction(chunk: *Chunk, offset: usize) usize {
     const instruction: u8 = chunk.read(offset);
     switch (instruction) {
         @intFromEnum(Opcode.OP_CONSTANT) => return constantInstruction("OP_CONSTANT", chunk, offset),
+        @intFromEnum(Opcode.OP_NEGATE) => return simpleInstruction("OP_NEGATE", offset),
         @intFromEnum(Opcode.OP_RETURN) => return simpleInstruction("OP_RETURN", offset),
         else => {
             std.debug.print("Unknown opcode {d}\n", .{instruction});

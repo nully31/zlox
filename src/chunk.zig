@@ -7,6 +7,7 @@ const VT = val.T;
 /// Opcode enum.
 pub const Opcode = enum(u8) {
     OP_CONSTANT,
+    OP_NEGATE,
     OP_RETURN,
 };
 

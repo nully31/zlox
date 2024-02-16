@@ -52,15 +52,14 @@ pub const VM = struct {
         return self.run();
     }
 
+    /// Instruction dispatcher
     fn run(self: *Self) InterpretResult {
         while (true) {
             const instruction = self.chunk.code[self.ip];
             if (config.debug_trace) {
                 std.debug.print("          ", .{});
                 for (self.stack[0..self.stack_top]) |elem| {
-                    std.debug.print("[ ", .{});
-                    std.debug.print("{d}", .{elem});
-                    std.debug.print(" ]", .{});
+                    std.debug.print("[{d: ^7}]", .{elem});
                 }
                 std.debug.print("\n", .{});
                 _ = debug.disassembleInstruction(self.chunk, self.ip);
@@ -73,6 +72,7 @@ pub const VM = struct {
                     self.push(constant);
                     std.debug.print("\n", .{});
                 },
+                @intFromEnum(Opcode.OP_NEGATE) => self.push(-self.pop()),
                 @intFromEnum(Opcode.OP_RETURN) => {
                     // Note: to be changed later
                     std.debug.print("{d}\n", .{self.pop()});
