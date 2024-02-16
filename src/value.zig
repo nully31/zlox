@@ -2,9 +2,9 @@ const std = @import("std");
 const Allocator = std.mem.Allocator;
 const T = f64;
 
-/// A dynamic array structure of constants.
+/// A dynamic array structure for constants.
 /// Essentially the same as `Chunk`, thus an allocator must be passed
-/// when initializing for dynamic memory allocation.
+/// when initializing via `init()` for dynamic memory allocation.
 pub const ValueArray = struct {
     const Self = @This();
 

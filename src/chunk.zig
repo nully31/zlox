@@ -9,9 +9,9 @@ pub const Opcode = enum(u8) {
     OP_RETURN,
 };
 
-/// A dynamic array structure of instructions.
-/// An allocator must be passed to BOTH this struct and the `ValueArray` struct inside
-/// when initializing for dynamic memory allocation.
+/// A dynamic array structure for instructions.
+/// An allocator must be passed when initializing via `init()` for dynamic memory allocation.
+/// The same allocator is also used for initializing the `constants` member.
 pub const Chunk = struct {
     const Self = @This();
 
