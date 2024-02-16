@@ -12,11 +12,13 @@ const InterpretResult = enum {
     INTERPRET_RUNTIME_ERROR,
 };
 
+/// A stack-based virtual machine struct.
+/// Use `init()` to initialize the VM instance.
 pub const VM = struct {
     const Self = @This();
 
     chunk: *Chunk = undefined,
-    ip: usize = undefined,
+    ip: usize = undefined, // The intruction pointer points at the next byte to be read
     stack: [config.stack_max]VT = undefined,
     stack_top: usize = undefined, // This points at the first *not-in-use* element of the stack
 
