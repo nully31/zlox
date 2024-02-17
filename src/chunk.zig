@@ -44,16 +44,16 @@ pub const Chunk = struct {
 
     pub fn write(self: *Self, byte: u8, line: usize) !void {
         // If the current chunk doesn't have enough capacity, then grow itself by doubling the capacity.
+        // Indices of `code` and `lines` are tied together so they always have the same sizes.
         if (self.code.len < self.count + 1) {
+            errdefer |err| {
+                self.free();
+                std.debug.print("Failed to allocate memory: {}", .{err});
+                std.os.exit(1);
+            }
             const new_capacity = if (self.code.len < 8) 8 else self.code.len * 2;
-            self.code = self.allocator.realloc(self.code, new_capacity) catch |err| {
-                self.allocator.free(self.code);
-                return err;
-            };
-            self.lines = self.allocator.realloc(self.lines, new_capacity) catch |err| {
-                self.allocator.free(self.lines);
-                return err;
-            };
+            self.code = try self.allocator.realloc(self.code, new_capacity);
+            self.lines = try self.allocator.realloc(self.lines, new_capacity);
         }
 
         self.code[self.count] = byte;
@@ -82,7 +82,6 @@ test "writing to a chunk" {
         chunk.free();
         _ = gpa.deinit();
     }
-    errdefer std.os.exit(1);
 
     comptime var i = 0;
     inline while (i < 10) : (i += 1) {
