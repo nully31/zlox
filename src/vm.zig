@@ -44,10 +44,10 @@ pub const VM = struct {
         return self.stack[self.stack_top];
     }
 
-    pub fn interpret(self: *Self, chunk: *Chunk) !InterpretResult {
-        self.chunk = chunk;
+    pub fn interpret(self: *Self, source: []const u8) !InterpretResult {
         self.ip = 0;
-        return try self.run();
+        _ = source;
+        return InterpretResult.INTERPRET_OK;
     }
 
     /// Instruction dispatcher
