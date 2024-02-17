@@ -49,7 +49,6 @@ pub const Chunk = struct {
             errdefer |err| {
                 self.free();
                 std.debug.print("Failed to allocate memory: {}", .{err});
-                std.os.exit(1);
             }
             const new_capacity = if (self.code.len < 8) 8 else self.code.len * 2;
             self.code = try self.allocator.realloc(self.code, new_capacity);

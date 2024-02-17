@@ -57,7 +57,6 @@ test "simple chunk" {
         chunk.free();
         _ = gpa.deinit();
     }
-    errdefer std.os.exit(1);
 
     var constant = try chunk.addConstant(1.2);
     try chunk.write(@intFromEnum(Opcode.OP_CONSTANT), 123);
@@ -77,5 +76,5 @@ test "simple chunk" {
     try chunk.write(@intFromEnum(Opcode.OP_NEGATE), 123);
 
     try chunk.write(@intFromEnum(Opcode.OP_RETURN), 123);
-    _ = vm.interpret(&chunk);
+    _ = try vm.interpret(&chunk);
 }

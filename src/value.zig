@@ -26,7 +26,6 @@ pub const ValueArray = struct {
             errdefer |err| {
                 self.free();
                 std.debug.print("Failed to allocate memory: {}\n", .{err});
-                std.os.exit(1);
             }
             const new_capacity = if (self.values.len < 8) 8 else self.values.len * 2;
             self.values = try self.allocator.realloc(self.values, new_capacity);

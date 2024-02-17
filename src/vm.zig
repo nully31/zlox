@@ -6,11 +6,9 @@ const Chunk = ch.Chunk;
 const Opcode = ch.Opcode;
 const VT = @import("value.zig").T;
 
-const InterpretResult = enum {
-    INTERPRET_OK,
-    INTERPRET_COMPILE_ERROR,
-    INTERPRET_RUNTIME_ERROR,
-};
+pub const InterpretResult = enum { INTERPRET_OK };
+
+pub const InterpretError = error{ INTERPRET_COMPILE_ERROR, INTERPRET_RUNTIME_ERROR };
 
 /// A stack-based virtual machine struct.
 /// Use `init()` to initialize the VM instance.
@@ -46,14 +44,14 @@ pub const VM = struct {
         return self.stack[self.stack_top];
     }
 
-    pub fn interpret(self: *Self, chunk: *Chunk) InterpretResult {
+    pub fn interpret(self: *Self, chunk: *Chunk) !InterpretResult {
         self.chunk = chunk;
         self.ip = 0;
-        return self.run();
+        return try self.run();
     }
 
     /// Instruction dispatcher
-    fn run(self: *Self) InterpretResult {
+    fn run(self: *Self) !InterpretResult {
         while (true) {
             const instruction = self.chunk.code[self.ip];
             if (config.debug_trace) {
@@ -72,11 +70,11 @@ pub const VM = struct {
                     self.ip += 1;
                     self.push(constant);
                 },
-                .OP_ADD => self.binaryOp('+'),
-                .OP_SUBTRACT => self.binaryOp('-'),
-                .OP_MULTIPLY => self.binaryOp('*'),
-                .OP_DIVIDE => self.binaryOp('/'),
-                .OP_NEGATE => self.push(-self.pop()),
+                .OP_ADD => try self.binaryOp('+'),
+                .OP_SUBTRACT => try self.binaryOp('-'),
+                .OP_MULTIPLY => try self.binaryOp('*'),
+                .OP_DIVIDE => try self.binaryOp('/'),
+                .OP_NEGATE => try self.push(-self.pop()),
                 .OP_RETURN => {
                     // Note: to be changed later
                     std.debug.print("{d}\n", .{self.pop()});
@@ -87,7 +85,7 @@ pub const VM = struct {
         }
     }
 
-    fn binaryOp(self: *Self, op: u8) void {
+    fn binaryOp(self: *Self, op: Opcode) !void {
         const b = self.pop();
         const a = self.pop();
         switch (op) {
@@ -95,7 +93,7 @@ pub const VM = struct {
             '-' => self.push(a - b),
             '*' => self.push(a * b),
             '/' => self.push(a / b),
-            else => return,
+            else => return InterpretError.INTERPRET_RUNTIME_ERROR,
         }
     }
 };
