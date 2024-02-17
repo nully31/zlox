@@ -1,4 +1,5 @@
 const std = @import("std");
+const clap = @import("lib/zig-clap/clap.zig");
 const ch = @import("chunk.zig");
 const val = @import("value.zig");
 const debug = @import("debug.zig");
@@ -7,19 +8,43 @@ const Chunk = ch.Chunk;
 const Opcode = ch.Opcode;
 
 pub fn main() !void {
-    // Prints to stderr (it's a shortcut based on `std.io.getStdErr()`)
-    std.debug.print("All your {s} are belong to us.\n", .{"codebase"});
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
 
-    // stdout is for the actual output of your application, for example if you
-    // are implementing gzip, then only the compressed bytes should be sent to
-    // stdout, not any debugging messages.
-    const stdout_file = std.io.getStdOut().writer();
-    var bw = std.io.bufferedWriter(stdout_file);
-    const stdout = bw.writer();
+    // Parse args
+    const params = comptime clap.parseParamsComptime(
+        \\-h, --help        Usage: zlox [options]
+        \\                  * if no option is provided, zlox runs in interactive mode.
+        \\-f, --file <path>  Path to executables
+    );
 
-    try stdout.print("Run `zig build test` to run the tests.\n", .{});
+    const parser = .{
+        .path = clap.parsers.string,
+    };
 
-    try bw.flush(); // don't forget to flush!
+    var diag = clap.Diagnostic{};
+    var res = clap.parse(clap.Help, &params, parser, .{
+        .diagnostic = &diag,
+        .allocator = gpa.allocator(),
+    }) catch |err| {
+        diag.report(std.io.getStdErr().writer(), err) catch {};
+        return err;
+    };
+    defer res.deinit();
+
+    if (res.args.help != 0) {
+        return clap.help(std.io.getStdErr().writer(), clap.Help, &params, .{});
+    }
+
+    var vm = VM.init();
+    defer vm.free();
+    if (res.args.file) |path| {
+        _ = path;
+        // runFile(path);
+    } else {
+        // try repl(&vm);
+    }
+}
 }
 
 test "simple chunk" {
