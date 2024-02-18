@@ -1,6 +1,7 @@
 const std = @import("std");
 const Chunk = @import("Chunk.zig");
 const ValueArray = @import("ValueArray.zig");
+const Compiler = @import("Compiler.zig");
 const debug = @import("debug.zig");
 const config = @import("config.zig");
 const Opcode = Chunk.Opcode;
@@ -41,9 +42,12 @@ pub fn pop(self: *VM) ValueArray.T {
     return self.stack[self.stack_top];
 }
 
+/// Drives a pipeline to scan, compile, and execute the code.
+/// Returns Error if an error occurs during compilation or runtime, otherwise returns ok.
 pub fn interpret(self: *VM, source: []const u8) !InterpretResult {
     self.ip = 0;
-    _ = source;
+    var compiler = Compiler.init(source);
+    compiler.run();
     return InterpretResult.INTERPRET_OK;
 }
 
