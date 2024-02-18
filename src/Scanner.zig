@@ -37,7 +37,7 @@ pub fn scanToken(self: *Scanner) Token {
     if (self.isAtEnd()) return self.makeToken(TokenType.EOF);
 
     const c = self.advance();
-    if (isDigit(c)) return number();
+    if (isDigit(c)) return self.number();
 
     switch (c) {
         '(' => return self.makeToken(TokenType.LEFT_PAREN),
@@ -72,14 +72,15 @@ fn advance(self: *Scanner) u8 {
 
 /// Returns the current character without consuming it (lookahead).
 fn peek(self: *Scanner) u8 {
+    if (self.isAtEnd()) return 0;
     return self.source[self.current];
 }
 
 /// Looks ahead of the current character and returns the character
 /// without consuming neither it nor the current character.
 /// Returns `null` if the current character is the last character (so the next one doesn't exist).
-fn peekNext(self: *Scanner) ?u8 {
-    if (self.isAtEnd()) return null;
+fn peekNext(self: *Scanner) u8 {
+    if (self.isAtEnd()) return 0;
     return self.source[self.current + 1];
 }
 
@@ -107,21 +108,17 @@ fn errorToken(self: *Scanner, message: []const u8) Token {
 fn skipWhitespace(self: *Scanner) void {
     while (true) {
         switch (self.peek()) {
-            ' ' => self.advance(),
-            '\r' => self.advance(),
-            '\t' => self.advance(),
+            ' ' => _ = self.advance(),
+            '\r' => _ = self.advance(),
+            '\t' => _ = self.advance(),
             '\n' => {
                 self.line += 1;
-                self.advance();
+                _ = self.advance();
             },
             '/' => {
-                if (self.peekNext()) |c| {
-                    if (c == '/') {
+                if (self.peekNext() == '/') {
                         // A comment goes until the end of the line
-                        while (self.peek() != '\n' and !self.isAtEnd()) self.advance();
-                    } else {
-                        return;
-                    }
+                    while (self.peek() != '\n' and !self.isAtEnd()) _ = self.advance();
                 } else {
                     return;
                 }
@@ -132,14 +129,14 @@ fn skipWhitespace(self: *Scanner) void {
 }
 
 fn number(self: *Scanner) Token {
-    while (isDigit(self.peek())) self.advance();
+    while (isDigit(self.peek())) _ = self.advance();
 
     // Look for a fractional part
     if (self.peek() == '.' and isDigit(self.peekNext())) {
         // Consume the "."
-        self.advance();
+        _ = self.advance();
 
-        while (isDigit(self.peek())) self.advance();
+        while (isDigit(self.peek())) _ = self.advance();
     }
 
     return self.makeToken(TokenType.NUMBER);
@@ -148,13 +145,13 @@ fn number(self: *Scanner) Token {
 fn string(self: *Scanner) Token {
     while (self.peek() != '"' and !self.isAtEnd()) {
         if (self.peek() == '\n') self.line += 1;
-        self.advance();
+        _ = self.advance();
     }
 
     if (self.isAtEnd()) return self.errorToken("Unterminated string.");
 
     // The closing quote
-    self.advance();
+    _ = self.advance();
     return self.makeToken(TokenType.STRING);
 }
 
