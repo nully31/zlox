@@ -13,8 +13,9 @@ pub fn main() !void {
 
     // Parse args
     const params = comptime clap.parseParamsComptime(
-        \\-h, --help        Usage: zlox [options]
-        \\-f, --file <path>  Path to lox source code
+        \\-h, --help        Usage: zlox <path>
+        \\                  * If no path is provided, zlox starts in interactive mode.
+        \\<path>            Path to lox source code
     );
 
     const parser = .{
@@ -37,7 +38,7 @@ pub fn main() !void {
 
     var vm = VM.init();
     defer vm.free();
-    if (res.args.file) |path| {
+    for (res.positionals) |path| {
         try runFile(&vm, path, gpa.allocator());
     } else {
         try repl(&vm);
