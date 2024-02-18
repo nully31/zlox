@@ -25,8 +25,12 @@ pub fn init(source: []const u8) Scanner {
     };
 }
 
-fn isDigit(char: u8) bool {
-    return char >= '0' and char <= '9';
+fn isAlpha(c: u8) bool {
+    return (c >= 'a' and c <= 'z') or (c >= 'A' and c <= 'Z') or c == '_';
+}
+
+fn isDigit(c: u8) bool {
+    return c >= '0' and c <= '9';
 }
 
 /// Scan and tokenize the given source input.
@@ -37,6 +41,7 @@ pub fn scanToken(self: *Scanner) Token {
     if (self.isAtEnd()) return self.makeToken(TokenType.EOF);
 
     const c = self.advance();
+    if (isAlpha(c)) return self.identifier();
     if (isDigit(c)) return self.number();
 
     switch (c) {
@@ -117,7 +122,7 @@ fn skipWhitespace(self: *Scanner) void {
             },
             '/' => {
                 if (self.peekNext() == '/') {
-                        // A comment goes until the end of the line
+                    // A comment goes until the end of the line
                     while (self.peek() != '\n' and !self.isAtEnd()) _ = self.advance();
                 } else {
                     return;
@@ -126,6 +131,62 @@ fn skipWhitespace(self: *Scanner) void {
             else => return,
         }
     }
+}
+
+fn identifier(self: *Scanner) Token {
+    while (isAlpha(self.peek()) or isDigit(self.peek())) _ = self.advance();
+    return self.makeToken(self.identifierType());
+}
+
+/// Finds the matching identifier token by looking up the trie, which stores a set of the keyword strings.
+/// It starts with the root node and switches to the matching node with the first letter, then checks the rest of the string.
+/// If there are keywords where the tree branches again after the first letter, then it switches against the second letter, and so on.
+/// If no matching node is found, it returns the `IDENTIFIER` token type.
+fn identifierType(self: *Scanner) TokenType {
+    switch (self.source[self.start]) {
+        'a' => return self.checkKeyword(1, 2, "nd", TokenType.AND),
+        'c' => return self.checkKeyword(1, 4, "lass", TokenType.CLASS),
+        'e' => return self.checkKeyword(1, 3, "lse", TokenType.ELSE),
+        'f' => if (self.current - self.start > 1) {
+            switch (self.source[self.start + 1]) {
+                'a' => return self.checkKeyword(2, 3, "lse", TokenType.FALSE),
+                'o' => return self.checkKeyword(2, 1, "r", TokenType.FOR),
+                'u' => return self.checkKeyword(2, 1, "n", TokenType.FUN),
+                else => return TokenType.IDENTIFIER,
+            }
+        },
+        'i' => return self.checkKeyword(1, 1, "f", TokenType.IF),
+        'n' => return self.checkKeyword(1, 2, "il", TokenType.NIL),
+        'o' => return self.checkKeyword(1, 1, "r", TokenType.OR),
+        'p' => return self.checkKeyword(1, 4, "rint", TokenType.PRINT),
+        'r' => return self.checkKeyword(1, 5, "eturn", TokenType.RETURN),
+        's' => return self.checkKeyword(1, 4, "uper", TokenType.SUPER),
+        't' => if (self.current - self.start > 1) {
+            switch (self.source[self.start + 1]) {
+                'h' => return self.checkKeyword(2, 2, "is", TokenType.THIS),
+                'r' => return self.checkKeyword(2, 2, "ue", TokenType.TRUE),
+                else => return TokenType.IDENTIFIER,
+            }
+        },
+        'v' => return self.checkKeyword(1, 2, "ar", TokenType.VAR),
+        'w' => return self.checkKeyword(1, 4, "hile", TokenType.WHILE),
+        else => return TokenType.IDENTIFIER,
+    }
+
+    return TokenType.IDENTIFIER;
+}
+
+/// Once a prefix is found that it could only be one possible reserved word,
+/// this method checks if BOTH the length of the lexeme and the remaining characters match
+/// to ensure the scanning token is the correct keyword and returns the corresponding token type.
+fn checkKeyword(self: *Scanner, start: usize, length: usize, rest: []const u8, Type: TokenType) TokenType {
+    if (self.current - self.start == start + length and
+        std.mem.eql(u8, self.source[self.start + start .. length], rest))
+    {
+        return Type;
+    }
+
+    return TokenType.IDENTIFIER;
 }
 
 fn number(self: *Scanner) Token {
