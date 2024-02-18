@@ -9,13 +9,13 @@ const Chunk = @This();
 
 /// Opcode enum.
 pub const Opcode = enum(u8) {
-    OP_CONSTANT,
-    OP_ADD,
-    OP_SUBTRACT,
-    OP_MULTIPLY,
-    OP_DIVIDE,
-    OP_NEGATE,
-    OP_RETURN,
+    CONSTANT,
+    ADD,
+    SUBTRACT,
+    MULTIPLY,
+    DIVIDE,
+    NEGATE,
+    RETURN,
     _,
 };
 
@@ -80,9 +80,9 @@ test "writing to a chunk" {
 
     comptime var i = 0;
     inline while (i < 10) : (i += 1) {
-        try chunk.write(@intFromEnum(Opcode.OP_RETURN), 123);
+        try chunk.write(@intFromEnum(Opcode.RETURN), 123);
         const op: Opcode = @enumFromInt(chunk.code[i]);
-        try std.testing.expectEqual(Opcode.OP_RETURN, op);
+        try std.testing.expectEqual(Opcode.RETURN, op);
         if (i < 8) {
             try std.testing.expectEqual(8, chunk.code.len);
         } else {

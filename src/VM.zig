@@ -62,17 +62,17 @@ fn run(self: *VM) !InterpretResult {
         self.ip += 1;
         const opcode: Opcode = @enumFromInt(instruction);
         switch (opcode) {
-            .OP_CONSTANT => {
+            .CONSTANT => {
                 const constant = self.chunk.constants.get(self.chunk.read(self.ip));
                 self.ip += 1;
                 self.push(constant);
             },
-            .OP_ADD => try self.binaryOp('+'),
-            .OP_SUBTRACT => try self.binaryOp('-'),
-            .OP_MULTIPLY => try self.binaryOp('*'),
-            .OP_DIVIDE => try self.binaryOp('/'),
-            .OP_NEGATE => try self.push(-self.pop()),
-            .OP_RETURN => {
+            .ADD => try self.binaryOp('+'),
+            .SUBTRACT => try self.binaryOp('-'),
+            .MULTIPLY => try self.binaryOp('*'),
+            .DIVIDE => try self.binaryOp('/'),
+            .NEGATE => try self.push(-self.pop()),
+            .RETURN => {
                 // Note: to be changed later
                 std.debug.print("{d}\n", .{self.pop()});
                 return InterpretResult.INTERPRET_OK;
