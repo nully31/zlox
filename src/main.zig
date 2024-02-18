@@ -1,13 +1,11 @@
 const std = @import("std");
 const clap = @import("lib/zig-clap/clap.zig");
-const ch = @import("chunk.zig");
-const val = @import("value.zig");
+const Chunk = @import("Chunk.zig");
+const ValueArray = @import("ValueArray.zig");
+const VM = @import("VM.zig");
 const debug = @import("debug.zig");
-const virm = @import("vm.zig");
 const Allocator = std.mem.Allocator;
-const VM = virm.VM;
-const Chunk = ch.Chunk;
-const Opcode = ch.Opcode;
+const Opcode = Chunk.Opcode;
 
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
@@ -16,7 +14,6 @@ pub fn main() !void {
     // Parse args
     const params = comptime clap.parseParamsComptime(
         \\-h, --help        Usage: zlox [options]
-        \\                  * if no option is provided, zlox runs in interactive mode.
         \\-f, --file <path>  Path to lox source code
     );
 
