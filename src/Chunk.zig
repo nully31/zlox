@@ -44,7 +44,7 @@ pub fn write(self: *Chunk, byte: u8, line: usize) !void {
     // Indices of `code` and `lines` are tied together so they always have the same sizes.
     if (self.code.len < self.count + 1) {
         errdefer |err| {
-            self.free();
+            self.deinit();
             std.debug.print("Failed to allocate memory: {}", .{err});
         }
         const new_capacity = if (self.code.len < 8) 8 else self.code.len * 2;

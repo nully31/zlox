@@ -7,13 +7,13 @@ const Scanner = @This();
 source: []const u8,
 start: usize,
 current: usize,
-line: isize,
+line: usize,
 
 /// Token struct.
 pub const Token = struct {
     type: TokenType,
     lexeme: []const u8,
-    line: isize,
+    line: usize,
 };
 
 pub fn init(source: []const u8) Scanner {

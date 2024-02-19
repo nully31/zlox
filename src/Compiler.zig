@@ -31,7 +31,7 @@ pub fn run(self: *Compiler) !void {
     self.advance();
     // self.expression();
     self.consume(TokenType.EOF, "Expect end of expression.");
-    self.end();
+    try self.end();
     return if (self.parser.hadError) InterpretError.INTERPRET_COMPILE_ERROR;
 }
 
@@ -68,7 +68,7 @@ fn emitBytes(self: *Compiler, byte1: u8, byte2: u8) !void {
 }
 
 fn emitReturn(self: *Compiler) !void {
-    try self.emitByte(TokenType.RETURN);
+    try self.emitByte(@intFromEnum(TokenType.RETURN));
 }
 
 fn end(self: *Compiler) !void {
