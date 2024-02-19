@@ -16,7 +16,7 @@ pub fn init(source: []const u8) Compiler {
 
 /// Compile the given source code.
 pub fn run(self: *Compiler) void {
-    // FIXME: currently this temporary driver code
+    // FIXME: currently this is temporary driver code
     var line: isize = -1;
     while (true) {
         const token = self.scanner.scanToken();
