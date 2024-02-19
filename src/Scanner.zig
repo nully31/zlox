@@ -181,7 +181,7 @@ fn identifierType(self: *Scanner) TokenType {
 /// to ensure the scanning token is the correct keyword and returns the corresponding token type.
 fn checkKeyword(self: *Scanner, start: usize, length: usize, rest: []const u8, Type: TokenType) TokenType {
     if (self.current - self.start == start + length and
-        std.mem.eql(u8, self.source[self.start + start .. length], rest))
+        std.mem.eql(u8, self.source[self.start + start .. self.start + start + length], rest))
     {
         return Type;
     }
