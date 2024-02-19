@@ -36,7 +36,7 @@ pub fn write(self: *ValueArray, value: T) !void {
     self.count += 1;
 }
 
-pub fn free(self: *ValueArray) void {
+pub fn deinit(self: *ValueArray) void {
     self.allocator.free(self.values);
     self.count = 0;
 }

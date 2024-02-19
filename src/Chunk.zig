@@ -62,8 +62,8 @@ pub fn addConstant(self: *Chunk, value: ValueArray.T) !u8 {
     return self.constants.count - 1;
 }
 
-pub fn free(self: *Chunk) void {
-    self.constants.free();
+pub fn deinit(self: *Chunk) void {
+    self.constants.deinit();
     self.allocator.free(self.code);
     self.allocator.free(self.lines);
     self.count = 0;

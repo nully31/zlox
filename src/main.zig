@@ -18,7 +18,7 @@ pub fn main() !void {
     defer std.process.argsFree(allocator, args);
 
     var vm = VM.init();
-    defer vm.free();
+    defer vm.deinit();
 
     if (args.len == 1) {
         try repl(&vm);
@@ -81,8 +81,8 @@ test "simple chunk" {
     var chunk = Chunk.init(allocator);
     var vm = VM.init();
     defer {
-        vm.free();
-        chunk.free();
+        vm.deinit();
+        chunk.deinit();
         _ = gpa.deinit();
     }
 

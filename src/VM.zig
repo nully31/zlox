@@ -24,7 +24,7 @@ pub fn init() VM {
     return self;
 }
 
-pub fn free(self: *VM) void {
+pub fn deinit(self: *VM) void {
     self.resetStack();
 }
 
@@ -48,7 +48,7 @@ pub fn interpret(self: *VM, source: []const u8) !InterpretResult {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
     var chunk = Chunk.init(gpa.allocator());
-    defer chunk.free();
+    defer chunk.deinit();
 
     var compiler = Compiler.init(source, &chunk);
     try compiler.run();
