@@ -9,7 +9,7 @@ const ValueArray = @This();
 /// Type that this struct handles.
 pub const T = f64;
 
-count: u8 = 0,
+count: usize = 0,
 values: []T = &.{},
 allocator: Allocator,
 
@@ -25,7 +25,7 @@ pub fn write(self: *ValueArray, value: T) !void {
     // If the current chunk doesn't have enough capacity, then grow itself by doubling the capacity.
     if (self.values.len < self.count + 1) {
         errdefer |err| {
-            self.free();
+            self.deinit();
             std.debug.print("Failed to allocate memory: {}\n", .{err});
         }
         const new_capacity = if (self.values.len < 8) 8 else self.values.len * 2;

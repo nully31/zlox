@@ -57,7 +57,7 @@ pub fn write(self: *Chunk, byte: u8, line: usize) !void {
     self.count += 1;
 }
 
-pub fn addConstant(self: *Chunk, value: ValueArray.T) !u8 {
+pub fn addConstant(self: *Chunk, value: ValueArray.T) !usize {
     try self.constants.write(value);
     return self.constants.count - 1;
 }
