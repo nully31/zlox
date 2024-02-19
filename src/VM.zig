@@ -28,7 +28,7 @@ pub fn free(self: *VM) void {
     self.resetStack();
 }
 
-fn resetStack(self: *VM) void {
+inline fn resetStack(self: *VM) void {
     self.stack_top = 0;
 }
 
@@ -45,9 +45,17 @@ pub fn pop(self: *VM) ValueArray.T {
 /// Drives a pipeline to scan, compile, and execute the code.
 /// Returns Error if an error occurs during compilation or runtime, otherwise returns ok.
 pub fn interpret(self: *VM, source: []const u8) !InterpretResult {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    defer _ = gpa.deinit();
+    var chunk = Chunk.init(gpa.allocator());
+    defer chunk.free();
+
+    var compiler = Compiler.init(source, &chunk);
+    try compiler.run();
+
     self.ip = 0;
-    var compiler = Compiler.init(source);
-    compiler.run();
+    self.chunk = &chunk;
+    // return try self.run();
     return InterpretResult.INTERPRET_OK;
 }
 
@@ -75,7 +83,7 @@ fn run(self: *VM) !InterpretResult {
             .SUBTRACT => try self.binaryOp('-'),
             .MULTIPLY => try self.binaryOp('*'),
             .DIVIDE => try self.binaryOp('/'),
-            .NEGATE => try self.push(-self.pop()),
+            .NEGATE => self.push(-self.pop()),
             .RETURN => {
                 // Note: to be changed later
                 std.debug.print("{d}\n", .{self.pop()});
@@ -86,7 +94,7 @@ fn run(self: *VM) !InterpretResult {
     }
 }
 
-inline fn binaryOp(self: *VM, op: Opcode) !void {
+inline fn binaryOp(self: *VM, comptime op: u8) !void {
     const b = self.pop();
     const a = self.pop();
     switch (op) {
