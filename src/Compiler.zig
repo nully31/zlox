@@ -29,8 +29,8 @@ pub fn run(self: *Compiler) !void {
         } else {
             std.debug.print("{s: >4} ", .{"|"});
         }
-        std.debug.print("{s: >13} '{s}'\n", .{ @tagName(token.Type), token.lexeme });
+        std.debug.print("{s: >13} '{s}'\n", .{ @tagName(token.type), token.lexeme });
 
-        if (token.Type == Scanner.TokenType.EOF) break;
+        if (token.type == Scanner.TokenType.EOF) break;
     }
 }

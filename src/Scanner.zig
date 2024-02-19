@@ -11,7 +11,7 @@ line: isize,
 
 /// Token struct.
 pub const Token = struct {
-    Type: TokenType,
+    type: TokenType,
     lexeme: []const u8,
     line: isize,
 };
@@ -97,13 +97,13 @@ fn match(self: *Scanner, expected: u8) bool {
     return true;
 }
 
-fn makeToken(self: *Scanner, Type: TokenType) Token {
-    return .{ .Type = Type, .lexeme = self.source[self.start..self.current], .line = self.line };
+fn makeToken(self: *Scanner, @"type": TokenType) Token {
+    return .{ .type = @"type", .lexeme = self.source[self.start..self.current], .line = self.line };
 }
 
 fn errorToken(self: *Scanner, message: []const u8) Token {
     return .{
-        .Type = TokenType.ERROR,
+        .type = TokenType.ERROR,
         .lexeme = message,
         .line = self.line,
     };
@@ -179,11 +179,11 @@ fn identifierType(self: *Scanner) TokenType {
 /// Once a prefix is found that it could only be one possible reserved word,
 /// this method checks if BOTH the length of the lexeme and the remaining characters match
 /// to ensure the scanning token is the correct keyword and returns the corresponding token type.
-fn checkKeyword(self: *Scanner, start: usize, length: usize, rest: []const u8, Type: TokenType) TokenType {
+fn checkKeyword(self: *Scanner, start: usize, length: usize, rest: []const u8, @"type": TokenType) TokenType {
     if (self.current - self.start == start + length and
         std.mem.eql(u8, self.source[self.start + start .. self.start + start + length], rest))
     {
-        return Type;
+        return @"type";
     }
 
     return TokenType.IDENTIFIER;
