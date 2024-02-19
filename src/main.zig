@@ -46,7 +46,7 @@ pub fn main() !void {
 }
 
 /// Runs VM which executes the given lox source code specified by `path`.
-/// Main program owns the read source input.
+/// Caller owns the read source input.
 fn runFile(vm: *VM, path: []const u8, allocator: Allocator) !void {
     const source: []u8 = try readFile(path, allocator);
     defer allocator.free(source);
