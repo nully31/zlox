@@ -1,5 +1,4 @@
 const std = @import("std");
-const clap = @import("lib/zig-clap/clap.zig");
 const Chunk = @import("Chunk.zig");
 const ValueArray = @import("ValueArray.zig");
 const VM = @import("VM.zig");
@@ -7,41 +6,28 @@ const debug = @import("debug.zig");
 const Allocator = std.mem.Allocator;
 const Opcode = Chunk.Opcode;
 
+const MainError = error{argsTooMany};
+
 pub fn main() !void {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    const allocator = gpa.allocator();
     defer _ = gpa.deinit();
 
     // Parse args
-    const params = comptime clap.parseParamsComptime(
-        \\-h, --help        Usage: zlox <path>
-        \\                  * If no path is provided, zlox starts in interactive mode.
-        \\<path>            Path to lox source code
-    );
-
-    const parser = .{
-        .path = clap.parsers.string,
-    };
-
-    var diag = clap.Diagnostic{};
-    var res = clap.parse(clap.Help, &params, parser, .{
-        .diagnostic = &diag,
-        .allocator = gpa.allocator(),
-    }) catch |err| {
-        diag.report(std.io.getStdErr().writer(), err) catch {};
-        return err;
-    };
-    defer res.deinit();
-
-    if (res.args.help != 0) {
-        return clap.help(std.io.getStdErr().writer(), clap.Help, &params, .{});
-    }
+    const args = try std.process.argsAlloc(allocator);
+    defer std.process.argsFree(allocator, args);
 
     var vm = VM.init();
     defer vm.free();
-    for (res.positionals) |path| {
-        try runFile(&vm, path, gpa.allocator());
-    } else {
+
+    if (args.len == 1) {
         try repl(&vm);
+    } else if (args.len == 2) {
+        try runFile(&vm, args[1], allocator);
+    } else {
+        std.debug.print("Usage: zlox [path]\n", .{});
+        std.debug.print("If no [path] is provided, zlox starts in interactive mode.\n", .{});
+        return MainError.argsTooMany;
     }
 }
 
