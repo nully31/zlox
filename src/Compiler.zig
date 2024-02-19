@@ -21,7 +21,7 @@ pub fn init(source: []const u8, destination: *Chunk) Compiler {
         .destination = destination,
         .scanner = Scanner.init(source),
         .parser = Parser.init(),
-        .compiling_chunk = destination, // Note: might be changed
+        .compiling_chunk = destination, // Might change
     };
 }
 
@@ -68,13 +68,14 @@ fn emitBytes(self: *Compiler, byte1: u8, byte2: u8) !void {
 }
 
 fn emitReturn(self: *Compiler) !void {
-    try self.emitByte(@intFromEnum(TokenType.RETURN));
+    try self.emitByte(@intFromEnum(TokenType.RETURN)); // Might be temporary
 }
 
 fn end(self: *Compiler) !void {
     try self.emitReturn();
 }
 
+// Might not be necessary
 fn currentChunk(self: *Compiler) *Chunk {
     return self.compiling_chunk;
 }
