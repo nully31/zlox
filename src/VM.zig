@@ -51,7 +51,7 @@ pub fn interpret(self: *VM, source: []const u8) !InterpretResult {
     defer chunk.deinit();
 
     var compiler = Compiler.init(source, &chunk);
-    try compiler.run();
+    try compiler.compile();
 
     self.ip = 0;
     self.chunk = &chunk;
