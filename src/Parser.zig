@@ -11,7 +11,7 @@ const TokenType = Scanner.TokenType;
 /// Parser struct.
 const Parser = @This();
 
-compiler: *Compiler,
+compiler: *Compiler, // A compiler instance which owns this parser instance
 current: Token,
 previous: Token,
 hadError: bool,
@@ -27,6 +27,10 @@ pub fn init() Parser {
     };
 }
 
+/// Parse tokens.
+/// Since parsing tokens and emitting bytecode are pipelined,
+/// a parsed expression is immediately dumped onto a chunk by the parser methods
+/// calling the comiler methods inside.
 pub fn parse(self: *Parser, compiler: *Compiler) !void {
     self.compiler = compiler;
 
@@ -48,6 +52,7 @@ fn advance(self: *Parser) void {
     }
 }
 
+/// Starts parsing with the highest precedence.
 fn expression(self: *Parser) !void {
     try self.parsePrecedence(Precedence.ASSIGNMENT);
 }
@@ -103,8 +108,8 @@ fn unary(self: *Parser) !void {
 }
 
 /// Core of the Pratt Parser.
-/// It calls the corresponding parsing function to compile a prefix/infix expression
-/// taking operators' precedence into account.
+/// It calls the corresponding parsing function defined in the `ParseRule` table
+/// to compile a prefix/infix expression taking operators' precedence into account.
 fn parsePrecedence(self: *Parser, precedence: Precedence) !void {
     // Read the next token and look up the corresponding prefix parse rule
     self.advance();
