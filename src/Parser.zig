@@ -67,6 +67,28 @@ fn consume(self: *Parser, @"type": TokenType, message: []const u8) void {
     self.errorAtCurrent(message);
 }
 
+/// Core of the Pratt Parser.
+/// It calls the corresponding parsing function defined in the `ParseRule` table
+/// to compile a prefix/infix expression taking operators' precedence into account.
+fn parsePrecedence(self: *Parser, precedence: Precedence) !void {
+    // Read the next token and look up the corresponding prefix parse rule
+    self.advance();
+    const prefix_rule = ParseRule.getRule(self.previous.type).prefix;
+    if (prefix_rule) |rule| {
+        try rule(self);
+    } else {
+        self.@"error"("Expect expression.");
+        return;
+    }
+
+    // Parse infix operator(s)
+    while (@intFromEnum(precedence) <= @intFromEnum(ParseRule.getRule(self.current.type).precedence)) {
+        self.advance();
+        const infix_rule = ParseRule.getRule(self.previous.type).infix;
+        try infix_rule.?(self);
+    }
+}
+
 fn binary(self: *Parser) !void {
     const operator_type = self.previous.type;
     const rule = ParseRule.getRule(operator_type);
@@ -107,58 +129,6 @@ fn unary(self: *Parser) !void {
     }
 }
 
-/// Core of the Pratt Parser.
-/// It calls the corresponding parsing function defined in the `ParseRule` table
-/// to compile a prefix/infix expression taking operators' precedence into account.
-fn parsePrecedence(self: *Parser, precedence: Precedence) !void {
-    // Read the next token and look up the corresponding prefix parse rule
-    self.advance();
-    const prefix_rule = ParseRule.getRule(self.previous.type).prefix;
-    if (prefix_rule) |rule| {
-        try rule(self);
-    } else {
-        self.@"error"("Expect expression.");
-        return;
-    }
-
-    // Parse infix operator(s)
-    while (@intFromEnum(precedence) <= @intFromEnum(ParseRule.getRule(self.current.type).precedence)) {
-        self.advance();
-        const infix_rule = ParseRule.getRule(self.previous.type).infix;
-        try infix_rule.?(self);
-    }
-}
-
-/// Prints where the error occurred.
-/// Sets the error flag and going panic mode instead of immediately returning compile error,
-/// because we want to resynchronize and keep on parsing.
-/// Thus, after a first error is detected, any other errors will get suppressed.
-/// Panic mode ends when the parser hits a synchronization point (i.e. statement boundaries).
-fn errorAt(self: *Parser, token: *Token, message: []const u8) void {
-    if (self.panicMode) return;
-    self.panicMode = true;
-    std.debug.print("[line {d}] Error", .{token.line});
-
-    if (token.type == TokenType.EOF) {
-        std.debug.print(" at end", .{});
-    } else if (token.type == TokenType.ERROR) {
-        // Nothing
-    } else {
-        std.debug.print(" at '{s}'", .{token.lexeme});
-    }
-
-    std.debug.print(": {s}\n", .{message});
-    self.hadError = true;
-}
-
-pub fn @"error"(self: *Parser, message: []const u8) void {
-    self.errorAt(&self.previous, message);
-}
-
-pub fn errorAtCurrent(self: *Parser, message: []const u8) void {
-    self.errorAt(&self.current, message);
-}
-
 const Precedence = enum {
     NONE,
     ASSIGNMENT, // =
@@ -183,7 +153,7 @@ const ParseRule = struct {
     }
 
     /// Table for the Pratt parser.
-    /// Rows need to be in sync with TokenType variants.
+    /// Rows need to be in sync with `TokenType` variants.
     const rules = [_]ParseRule{
         .{ .prefix = grouping, .infix = null, .precedence = Precedence.NONE }, // LEFT_PAREN
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // RIGHT_PAREN
@@ -227,3 +197,33 @@ const ParseRule = struct {
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // EOF
     };
 };
+
+/// Prints where the error occurred.
+/// Sets the error flag and going panic mode instead of immediately returning compile error,
+/// because we want to resynchronize and keep on parsing.
+/// Thus, after a first error is detected, any other errors will get suppressed.
+/// Panic mode ends when the parser hits a synchronization point (i.e. statement boundaries).
+fn errorAt(self: *Parser, token: *Token, message: []const u8) void {
+    if (self.panicMode) return;
+    self.panicMode = true;
+    std.debug.print("[line {d}] Error", .{token.line});
+
+    if (token.type == TokenType.EOF) {
+        std.debug.print(" at end", .{});
+    } else if (token.type == TokenType.ERROR) {
+        // Nothing
+    } else {
+        std.debug.print(" at '{s}'", .{token.lexeme});
+    }
+
+    std.debug.print(": {s}\n", .{message});
+    self.hadError = true;
+}
+
+pub fn @"error"(self: *Parser, message: []const u8) void {
+    self.errorAt(&self.previous, message);
+}
+
+pub fn errorAtCurrent(self: *Parser, message: []const u8) void {
+    self.errorAt(&self.current, message);
+}
