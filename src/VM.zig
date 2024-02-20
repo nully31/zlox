@@ -55,8 +55,7 @@ pub fn interpret(self: *VM, source: []const u8) !InterpretResult {
 
     self.ip = 0;
     self.chunk = &chunk;
-    // return try self.run();
-    return InterpretResult.INTERPRET_OK;
+    return try self.run();
 }
 
 /// Instruction dispatcher

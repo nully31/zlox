@@ -2,6 +2,8 @@ const std = @import("std");
 const Chunk = @import("Chunk.zig");
 const ValueArray = @import("ValueArray.zig");
 const Scanner = @import("Scanner.zig");
+const debug = @import("debug.zig");
+const config = @import("config.zig");
 const Token = Scanner.Token;
 const TokenType = Scanner.TokenType;
 const Opcode = Chunk.Opcode;
@@ -28,9 +30,8 @@ pub fn init(source: []const u8, destination: *Chunk) Compiler {
 
 /// Compiles the given source code.
 pub fn run(self: *Compiler) !void {
-    // Front end
     self.advance();
-    // self.expression();
+    try self.expression();
     self.consume(TokenType.EOF, "Expect end of expression.");
     try self.end();
     return if (self.parser.hadError) InterpretError.INTERPRET_COMPILE_ERROR;
@@ -61,11 +62,69 @@ fn consume(self: *Compiler, @"type": TokenType, message: []const u8) void {
 
 fn end(self: *Compiler) !void {
     try self.emitReturn();
+    if (config.debug_print_code) {
+        if (!self.parser.hadError) {
+            debug.disassembleChunk(self.compiling_chunk, "code");
+        }
+    }
+}
+
+fn expression(self: *Compiler) !void {
+    try self.parsePrecedence(Precedence.ASSIGNMENT);
+}
+
+fn binary(self: *Compiler) !void {
+    const operator_type = self.parser.previous.type;
+    const rule = ParseRule.getRule(operator_type);
+    try self.parsePrecedence(@enumFromInt(@intFromEnum(rule.precedence) + 1));
+
+    switch (operator_type) {
+        TokenType.PLUS => try self.emitByte(@intFromEnum(Opcode.ADD)),
+        TokenType.MINUS => try self.emitByte(@intFromEnum(Opcode.SUBTRACT)),
+        TokenType.STAR => try self.emitByte(@intFromEnum(Opcode.MULTIPLY)),
+        TokenType.SLASH => try self.emitByte(@intFromEnum(Opcode.DIVIDE)),
+        else => unreachable,
+    }
+}
+
+fn grouping(self: *Compiler) !void {
+    try self.expression();
+    self.consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.");
 }
 
 fn number(self: *Compiler) !void {
     const value = try std.fmt.parseFloat(ValueArray.T, self.parser.previous.lexeme);
     try self.emitConstant(value);
+}
+
+fn unary(self: *Compiler) !void {
+    const operator_type = self.parser.previous.type;
+
+    // Compile the operand
+    try self.parsePrecedence(Precedence.UNARY);
+
+    // Emit the operator instruction
+    switch (operator_type) {
+        TokenType.MINUS => try self.emitByte(@intFromEnum(Opcode.NEGATE)),
+        else => unreachable,
+    }
+}
+
+fn parsePrecedence(self: *Compiler, precedence: Precedence) !void {
+    self.advance();
+    const prefix_rule = ParseRule.getRule(self.parser.previous.type).prefix;
+    if (prefix_rule) |rule| {
+        try rule(self);
+    } else {
+        self.parser.@"error"("Expect expression.");
+        return;
+    }
+
+    while (@intFromEnum(precedence) <= @intFromEnum(ParseRule.getRule(self.parser.current.type).precedence)) {
+        self.advance();
+        const infix_rule = ParseRule.getRule(self.parser.previous.type).infix;
+        try infix_rule.?(self);
+    }
 }
 
 fn emitByte(self: *Compiler, byte: u8) !void {
@@ -89,13 +148,14 @@ fn makeConstant(self: *Compiler, value: ValueArray.T) !u8 {
         return 0;
     }
 
-    return @as(u8, constant);
+    return @intCast(constant);
 }
 
 fn emitConstant(self: *Compiler, value: ValueArray.T) !void {
-    try self.emitBytes(@intFromEnum(Opcode.CONSTANT), self.makeConstant(value));
+    try self.emitBytes(@intFromEnum(Opcode.CONSTANT), try self.makeConstant(value));
 }
 
+/// Parser struct.
 const Parser = struct {
     current: Token,
     previous: Token,
@@ -140,4 +200,74 @@ const Parser = struct {
     pub fn errorAtCurrent(self: *Parser, message: []const u8) void {
         self.errorAt(&self.current, message);
     }
+};
+
+const Precedence = enum {
+    NONE,
+    ASSIGNMENT, // =
+    OR, // or
+    AND, // and
+    EQUALITY, // == !=
+    COMPARISON, // < > <= >=
+    TERM, // + -
+    FACTOR, // * /
+    UNARY, // ! -
+    CALL, // . ()
+    PRIMARY,
+};
+
+const ParseFn = *const fn (self: *Compiler) anyerror!void;
+const ParseRule = struct {
+    prefix: ?ParseFn,
+    infix: ?ParseFn,
+    precedence: Precedence,
+
+    fn getRule(@"type": TokenType) *const ParseRule {
+        return &rules[@intFromEnum(@"type")];
+    }
+
+    /// Table for the Pratt parser.
+    /// Rows need to be in sync with TokenType variants.
+    const rules = [_]ParseRule{
+        .{ .prefix = grouping, .infix = null, .precedence = Precedence.NONE }, // LEFT_PAREN
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // RIGHT_PAREN
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // LEFT_BRACE
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // RIGHT BRACE
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // COMMA
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // DOT
+        .{ .prefix = unary, .infix = binary, .precedence = Precedence.TERM }, // MINUS
+        .{ .prefix = null, .infix = binary, .precedence = Precedence.TERM }, // PLUS
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // SEMICOLON
+        .{ .prefix = null, .infix = binary, .precedence = Precedence.FACTOR }, // SLASH
+        .{ .prefix = null, .infix = binary, .precedence = Precedence.FACTOR }, // STAR
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // BANG
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // BANG_EQUAL
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // EQUAL
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // EQUAL_EQUAL
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // GREATER
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // GREATER_EQUAL
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // LESS
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // LESS_EQUAL
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // IDENTIFIER
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // STRING
+        .{ .prefix = number, .infix = null, .precedence = Precedence.NONE }, // NUMBER
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // AND
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // CLASS
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // ELSE
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // FALSE
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // FOR
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // FUN
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // IF
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // NIL
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // OR
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // PRINT
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // RETURN
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // SUPER
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // THIS
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // TRUE
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // VAR
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // WHILE
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // ERROR
+        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // EOF
+    };
 };
