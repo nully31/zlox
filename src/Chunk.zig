@@ -74,7 +74,7 @@ test "writing to a chunk" {
     const allocator = gpa.allocator();
     var chunk = Chunk.init(allocator);
     defer {
-        chunk.free();
+        chunk.deinit();
         _ = gpa.deinit();
     }
 
