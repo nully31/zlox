@@ -1,0 +1,32 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build",
+            "type": "shell",
+            "command": "zig build",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        },
+        {
+            "label": "build_test",
+            "type": "shell",
+            "command": "zig test -femit-bin=zig-out/bin/test --test-no-exec ${input:buildFile}",
+            "group": {
+                "kind": "build",
+                "isDefault": false,
+            }
+        },
+    ],
+
+    "inputs": [
+        {
+            "type": "promptString",
+            "id": "buildFile",
+            "description": "Specific file to build and debug",
+            "default": "src/main.zig",
+        },
+    ]
+}
