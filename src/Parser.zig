@@ -28,7 +28,7 @@ pub fn init() Parser {
 }
 
 /// Parse tokens.
-/// Since parsing tokens and emitting bytecode are pipelined,
+/// Since scanning tokens, parsing tokens, and emitting bytecode are pipelined,
 /// a parsed expression is immediately dumped onto a chunk by the parser methods
 /// calling the comiler methods inside.
 pub fn parse(self: *Parser, compiler: *Compiler) !void {
