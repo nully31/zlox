@@ -4,6 +4,7 @@ const ValueArray = @import("ValueArray.zig");
 const Compiler = @import("Compiler.zig");
 const debug = @import("debug.zig");
 const config = @import("config.zig");
+const Value = @import("value.zig").Value;
 const Opcode = Chunk.Opcode;
 
 /// A stack-based virtual machine struct.
@@ -15,7 +16,7 @@ pub const InterpretError = error{ INTERPRET_COMPILE_ERROR, INTERPRET_RUNTIME_ERR
 
 chunk: *Chunk = undefined,
 ip: usize = undefined, // The intruction pointer points at the next byte to be read
-stack: [config.stack_max]ValueArray.T = undefined,
+stack: [config.stack_max]Value = undefined,
 stack_top: usize = undefined, // This points at the first *not-in-use* element of the stack
 
 pub fn init() VM {
@@ -32,12 +33,12 @@ inline fn resetStack(self: *VM) void {
     self.stack_top = 0;
 }
 
-pub fn push(self: *VM, value: ValueArray.T) void {
+pub fn push(self: *VM, value: Value) void {
     self.stack[self.stack_top] = value;
     self.stack_top += 1;
 }
 
-pub fn pop(self: *VM) ValueArray.T {
+pub fn pop(self: *VM) Value {
     self.stack_top -= 1;
     return self.stack[self.stack_top];
 }

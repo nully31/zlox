@@ -1,4 +1,5 @@
 const std = @import("std");
+const Value = @import("value.zig").Value;
 const Allocator = std.mem.Allocator;
 
 /// A dynamic array structure for constants.
@@ -6,22 +7,19 @@ const Allocator = std.mem.Allocator;
 /// when initializing via `init()` for dynamic memory allocation.
 const ValueArray = @This();
 
-/// Type that this struct handles.
-pub const T = f64;
-
 count: usize = 0,
-values: []T = &.{},
+values: []Value = &.{},
 allocator: Allocator,
 
 pub fn init(allocator: Allocator) ValueArray {
     return .{ .allocator = allocator };
 }
 
-pub fn get(self: *ValueArray, index: u8) T {
+pub fn get(self: *ValueArray, index: u8) Value {
     return self.values[index];
 }
 
-pub fn write(self: *ValueArray, value: T) !void {
+pub fn write(self: *ValueArray, value: Value) !void {
     // If the current chunk doesn't have enough capacity, then grow itself by doubling the capacity.
     if (self.values.len < self.count + 1) {
         errdefer |err| {

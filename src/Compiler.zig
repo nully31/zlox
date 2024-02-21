@@ -5,10 +5,11 @@ const Scanner = @import("Scanner.zig");
 const Parser = @import("Parser.zig");
 const debug = @import("debug.zig");
 const config = @import("config.zig");
+const InterpretError = @import("VM.zig").InterpretError;
+const Value = @import("value.zig").Value;
 const Token = Scanner.Token;
 const TokenType = Scanner.TokenType;
 const Opcode = Chunk.Opcode;
-const InterpretError = @import("VM.zig").InterpretError;
 
 /// Compiler struct.
 const Compiler = @This();
@@ -59,7 +60,7 @@ pub fn emitReturn(self: *Compiler) !void {
     try self.emitByte(@intFromEnum(Opcode.RETURN)); // Might be temporary
 }
 
-pub fn makeConstant(self: *Compiler, value: ValueArray.T) !u8 {
+pub fn makeConstant(self: *Compiler, value: Value) !u8 {
     const constant = try self.compiling_chunk.addConstant(value);
     // Up to 256 constants in a chunk since `CONSTANT` instruction uses a single byte for the index operand
     if (constant > std.math.maxInt(u8)) {
@@ -70,6 +71,6 @@ pub fn makeConstant(self: *Compiler, value: ValueArray.T) !u8 {
     return @intCast(constant);
 }
 
-pub fn emitConstant(self: *Compiler, value: ValueArray.T) !void {
+pub fn emitConstant(self: *Compiler, value: Value) !void {
     try self.emitBytes(@intFromEnum(Opcode.CONSTANT), try self.makeConstant(value));
 }

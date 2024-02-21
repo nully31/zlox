@@ -2,9 +2,8 @@ const std = @import("std");
 const Compiler = @import("Compiler.zig");
 const Scanner = @import("Scanner.zig");
 const ValueArray = @import("ValueArray.zig");
-
 const Opcode = @import("Chunk.zig").Opcode;
-
+const Value = @import("value.zig").Value;
 const Token = Scanner.Token;
 const TokenType = Scanner.TokenType;
 
@@ -112,7 +111,7 @@ fn grouping(self: *Parser) !void {
 }
 
 fn number(self: *Parser) !void {
-    const value = try std.fmt.parseFloat(ValueArray.T, self.previous.lexeme);
+    const value = try std.fmt.parseFloat(Value, self.previous.lexeme);
     try self.compiler.emitConstant(value);
 }
 
