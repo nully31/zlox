@@ -4,8 +4,10 @@ const ValueArray = @import("ValueArray.zig");
 const Compiler = @import("Compiler.zig");
 const debug = @import("debug.zig");
 const config = @import("config.zig");
-const Value = @import("value.zig").Value;
+const val = @import("value.zig");
 const Opcode = Chunk.Opcode;
+const Value = val.Value;
+const ValueType = val.ValueType;
 
 /// A stack-based virtual machine struct.
 /// Use `init()` to initialize the VM instance.
@@ -33,14 +35,27 @@ inline fn resetStack(self: *VM) void {
     self.stack_top = 0;
 }
 
-pub fn push(self: *VM, value: Value) void {
+fn runtimeError(self: *VM, comptime fmt: []const u8, args: anytype) void {
+    std.debug.print(fmt, args);
+    std.debug.print("\n", .{});
+
+    const line = self.chunk.lines[self.ip - 1];
+    std.debug.print("[line {}] in script\n", .{line});
+    self.resetStack();
+}
+
+fn push(self: *VM, value: Value) void {
     self.stack[self.stack_top] = value;
     self.stack_top += 1;
 }
 
-pub fn pop(self: *VM) Value {
+fn pop(self: *VM) Value {
     self.stack_top -= 1;
     return self.stack[self.stack_top];
+}
+
+fn peek(self: *VM, distance: usize) Value {
+    return self.stack[self.stack_top - 1 - distance];
 }
 
 /// Drives a pipeline to scan, compile, and execute the code.
@@ -66,7 +81,7 @@ fn run(self: *VM) !InterpretResult {
         if (config.debug_trace) {
             std.debug.print("          ", .{});
             for (self.stack[0..self.stack_top]) |elem| {
-                std.debug.print("[{d: ^7}]", .{elem});
+                std.debug.print("[{d: ^7}]", .{elem.number});
             }
             std.debug.print("\n", .{});
             _ = debug.disassembleInstruction(self.chunk, self.ip);
@@ -83,10 +98,16 @@ fn run(self: *VM) !InterpretResult {
             .SUBTRACT => try self.binaryOp('-'),
             .MULTIPLY => try self.binaryOp('*'),
             .DIVIDE => try self.binaryOp('/'),
-            .NEGATE => self.push(-self.pop()),
+            .NEGATE => {
+                if (!self.peek(0).is(ValueType.number)) {
+                    self.runtimeError("Operand must be a number.", .{});
+                    return InterpretError.INTERPRET_RUNTIME_ERROR;
+                }
+                self.push(Value{ .number = -self.pop().number });
+            },
             .RETURN => {
                 // Note: to be changed later
-                std.debug.print("{d}\n", .{self.pop()});
+                std.debug.print("{d}\n", .{self.pop().number});
                 return InterpretResult.INTERPRET_OK;
             },
             _ => continue,
@@ -95,13 +116,17 @@ fn run(self: *VM) !InterpretResult {
 }
 
 inline fn binaryOp(self: *VM, comptime op: u8) !void {
-    const b = self.pop();
-    const a = self.pop();
+    if (!self.peek(0).is(ValueType.number) or !self.peek(1).is(ValueType.number)) {
+        self.runtimeError("Operands must be numbers.", .{});
+        return InterpretError.INTERPRET_RUNTIME_ERROR;
+    }
+    const b = self.pop().number;
+    const a = self.pop().number;
     switch (op) {
-        '+' => self.push(a + b),
-        '-' => self.push(a - b),
-        '*' => self.push(a * b),
-        '/' => self.push(a / b),
+        '+' => self.push(Value{ .number = a + b }),
+        '-' => self.push(Value{ .number = a - b }),
+        '*' => self.push(Value{ .number = a * b }),
+        '/' => self.push(Value{ .number = a / b }),
         else => return InterpretError.INTERPRET_RUNTIME_ERROR,
     }
 }

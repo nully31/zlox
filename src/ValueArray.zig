@@ -41,5 +41,5 @@ pub fn deinit(self: *ValueArray) void {
 
 /// Prints a value read from the specified index in the pool
 pub fn print(self: *ValueArray, index: u8) void {
-    std.debug.print("{d}", .{self.get(index)});
+    std.debug.print("{d}", .{self.get(index).number});
 }

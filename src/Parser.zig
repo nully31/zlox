@@ -111,7 +111,7 @@ fn grouping(self: *Parser) !void {
 }
 
 fn number(self: *Parser) !void {
-    const value = try std.fmt.parseFloat(Value, self.previous.lexeme);
+    const value = Value{ .number = try std.fmt.parseFloat(f64, self.previous.lexeme) };
     try self.compiler.emitConstant(value);
 }
 
