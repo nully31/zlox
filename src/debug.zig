@@ -25,6 +25,9 @@ pub fn disassembleInstruction(chunk: *Chunk, offset: usize) usize {
     const opcode: Opcode = @enumFromInt(instruction);
     switch (opcode) {
         .CONSTANT => return constantInstruction(@tagName(opcode), chunk, offset),
+        .NIL => return simpleInstruction(@tagName(opcode), offset),
+        .TRUE => return simpleInstruction(@tagName(opcode), offset),
+        .FALSE => return simpleInstruction(@tagName(opcode), offset),
         .ADD => return simpleInstruction(@tagName(opcode), offset),
         .SUBTRACT => return simpleInstruction(@tagName(opcode), offset),
         .MULTIPLY => return simpleInstruction(@tagName(opcode), offset),

@@ -11,6 +11,9 @@ const Chunk = @This();
 /// Opcode enum.
 pub const Opcode = enum(u8) {
     CONSTANT,
+    NIL,
+    TRUE,
+    FALSE,
     ADD,
     SUBTRACT,
     MULTIPLY,

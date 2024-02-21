@@ -12,6 +12,14 @@ pub const Value = union(ValueType) {
             inline else => |_, tag| tag == T,
         };
     }
+
+    pub fn print(self: Value) void {
+        switch (self) {
+            .boolean => |b| std.debug.print("{}", .{b}),
+            .nil => std.debug.print("nil", .{}),
+            .number => |n| std.debug.print("{d}", .{n}),
+        }
+    }
 };
 
 test "type check" {

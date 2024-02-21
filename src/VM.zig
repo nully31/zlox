@@ -78,14 +78,19 @@ pub fn interpret(self: *VM, source: []const u8) !InterpretResult {
 fn run(self: *VM) !InterpretResult {
     while (true) {
         const instruction = self.chunk.code[self.ip];
+
+        // Debug trace
         if (config.debug_trace) {
             std.debug.print("          ", .{});
             for (self.stack[0..self.stack_top]) |elem| {
-                std.debug.print("[{d: ^7}]", .{elem.number});
+                std.debug.print("[", .{});
+                elem.print();
+                std.debug.print("]", .{});
             }
             std.debug.print("\n", .{});
             _ = debug.disassembleInstruction(self.chunk, self.ip);
         }
+
         self.ip += 1;
         const opcode: Opcode = @enumFromInt(instruction);
         switch (opcode) {
@@ -94,6 +99,9 @@ fn run(self: *VM) !InterpretResult {
                 self.ip += 1;
                 self.push(constant);
             },
+            .NIL => self.push(Value{ .nil = {} }),
+            .TRUE => self.push(Value{ .boolean = true }),
+            .FALSE => self.push(Value{ .boolean = false }),
             .ADD => try self.binaryOp('+'),
             .SUBTRACT => try self.binaryOp('-'),
             .MULTIPLY => try self.binaryOp('*'),
@@ -107,7 +115,9 @@ fn run(self: *VM) !InterpretResult {
             },
             .RETURN => {
                 // Note: to be changed later
-                std.debug.print("{d}\n", .{self.pop().number});
+                self.pop().print();
+                std.debug.print("\n", .{});
+
                 return InterpretResult.INTERPRET_OK;
             },
             _ => continue,

@@ -97,10 +97,19 @@ fn binary(self: *Parser) !void {
     try self.parsePrecedence(@enumFromInt(@intFromEnum(rule.precedence) + 1));
 
     switch (operator_type) {
-        TokenType.PLUS => try self.compiler.emitByte(@intFromEnum(Opcode.ADD)),
-        TokenType.MINUS => try self.compiler.emitByte(@intFromEnum(Opcode.SUBTRACT)),
-        TokenType.STAR => try self.compiler.emitByte(@intFromEnum(Opcode.MULTIPLY)),
-        TokenType.SLASH => try self.compiler.emitByte(@intFromEnum(Opcode.DIVIDE)),
+        .PLUS => try self.compiler.emitByte(@intFromEnum(Opcode.ADD)),
+        .MINUS => try self.compiler.emitByte(@intFromEnum(Opcode.SUBTRACT)),
+        .STAR => try self.compiler.emitByte(@intFromEnum(Opcode.MULTIPLY)),
+        .SLASH => try self.compiler.emitByte(@intFromEnum(Opcode.DIVIDE)),
+        else => unreachable,
+    }
+}
+
+fn literal(self: *Parser) !void {
+    switch (self.previous.type) {
+        .FALSE => try self.compiler.emitByte(@intFromEnum(Opcode.FALSE)),
+        .NIL => try self.compiler.emitByte(@intFromEnum(Opcode.NIL)),
+        .TRUE => try self.compiler.emitByte(@intFromEnum(Opcode.TRUE)),
         else => unreachable,
     }
 }
@@ -179,17 +188,17 @@ const ParseRule = struct {
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // AND
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // CLASS
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // ELSE
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // FALSE
+        .{ .prefix = literal, .infix = null, .precedence = Precedence.NONE }, // FALSE
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // FOR
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // FUN
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // IF
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // NIL
+        .{ .prefix = literal, .infix = null, .precedence = Precedence.NONE }, // NIL
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // OR
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // PRINT
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // RETURN
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // SUPER
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // THIS
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // TRUE
+        .{ .prefix = literal, .infix = null, .precedence = Precedence.NONE }, // TRUE
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // VAR
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // WHILE
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // ERROR
