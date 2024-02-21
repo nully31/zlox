@@ -10,7 +10,7 @@ const TokenType = Scanner.TokenType;
 /// Parser struct.
 const Parser = @This();
 
-compiler: *Compiler, // A compiler instance which owns this parser instance
+compiler: *Compiler,
 current: Token,
 previous: Token,
 hadError: bool,
@@ -28,7 +28,7 @@ pub fn init() Parser {
 
 /// Parse tokens.
 /// Since scanning tokens, parsing tokens, and emitting bytecode are pipelined,
-/// a parsed expression is immediately dumped onto a chunk by the parser methods
+/// the parsed expressions are immediately dumped onto a chunk by the parser methods
 /// calling the comiler methods inside.
 pub fn parse(self: *Parser, compiler: *Compiler) !void {
     self.compiler = compiler;
