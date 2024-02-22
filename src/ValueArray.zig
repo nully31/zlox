@@ -41,9 +41,5 @@ pub fn deinit(self: *ValueArray) void {
 
 /// Prints a value read from the specified index in the pool
 pub fn print(self: *ValueArray, index: u8) void {
-    switch (self.get(index)) {
-        .boolean => |b| std.debug.print("{}", .{b}),
-        .nil => std.debug.print("nil", .{}),
-        .number => |n| std.debug.print("{d}", .{n}),
-    }
+    self.get(index).print();
 }
