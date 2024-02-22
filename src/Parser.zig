@@ -97,6 +97,12 @@ fn binary(self: *Parser) !void {
     try self.parsePrecedence(@enumFromInt(@intFromEnum(rule.precedence) + 1));
 
     switch (operator_type) {
+        .BANG_EQUAL => try self.compiler.emitBytes(@intFromEnum(Opcode.EQUAL), @intFromEnum(Opcode.NOT)), // a != b <-> !(a == b)
+        .EQUAL_EQUAL => try self.compiler.emitByte(@intFromEnum(Opcode.EQUAL)),
+        .GREATER => try self.compiler.emitByte(@intFromEnum(Opcode.GREATER)),
+        .GREATER_EQUAL => try self.compiler.emitBytes(@intFromEnum(Opcode.LESS), @intFromEnum(Opcode.NOT)), // a >= b <-> !(a < b)
+        .LESS => try self.compiler.emitByte(@intFromEnum(Opcode.LESS)),
+        .LESS_EQUAL => try self.compiler.emitBytes(@intFromEnum(Opcode.GREATER), @intFromEnum(Opcode.NOT)), // a <= b <-> !(a > b)
         .PLUS => try self.compiler.emitByte(@intFromEnum(Opcode.ADD)),
         .MINUS => try self.compiler.emitByte(@intFromEnum(Opcode.SUBTRACT)),
         .STAR => try self.compiler.emitByte(@intFromEnum(Opcode.MULTIPLY)),
@@ -176,13 +182,13 @@ const ParseRule = struct {
         .{ .prefix = null, .infix = binary, .precedence = Precedence.FACTOR }, // SLASH
         .{ .prefix = null, .infix = binary, .precedence = Precedence.FACTOR }, // STAR
         .{ .prefix = unary, .infix = null, .precedence = Precedence.NONE }, // BANG
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // BANG_EQUAL
+        .{ .prefix = null, .infix = binary, .precedence = Precedence.EQUALITY }, // BANG_EQUAL
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // EQUAL
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // EQUAL_EQUAL
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // GREATER
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // GREATER_EQUAL
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // LESS
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // LESS_EQUAL
+        .{ .prefix = null, .infix = binary, .precedence = Precedence.EQUALITY }, // EQUAL_EQUAL
+        .{ .prefix = null, .infix = binary, .precedence = Precedence.COMPARISON }, // GREATER
+        .{ .prefix = null, .infix = binary, .precedence = Precedence.COMPARISON }, // GREATER_EQUAL
+        .{ .prefix = null, .infix = binary, .precedence = Precedence.COMPARISON }, // LESS
+        .{ .prefix = null, .infix = binary, .precedence = Precedence.COMPARISON }, // LESS_EQUAL
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // IDENTIFIER
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // STRING
         .{ .prefix = number, .infix = null, .precedence = Precedence.NONE }, // NUMBER

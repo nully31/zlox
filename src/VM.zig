@@ -27,11 +27,6 @@ pub fn init() VM {
     return self;
 }
 
-fn isFalsey(value: Value) bool {
-    // `nil` is treated as falsey here
-    return value.is(ValueType.nil) or (value.is(ValueType.boolean) and !value.boolean);
-}
-
 pub fn deinit(self: *VM) void {
     self.resetStack();
 }
@@ -107,6 +102,13 @@ fn run(self: *VM) !InterpretResult {
             .NIL => self.push(Value{ .nil = {} }),
             .TRUE => self.push(Value{ .boolean = true }),
             .FALSE => self.push(Value{ .boolean = false }),
+            .EQUAL => {
+                const b = self.pop();
+                const a = self.pop();
+                self.push(Value{ .boolean = a.isEqual(b) });
+            },
+            .GREATER => try self.binaryOp('>'),
+            .LESS => try self.binaryOp('<'),
             .ADD => try self.binaryOp('+'),
             .SUBTRACT => try self.binaryOp('-'),
             .MULTIPLY => try self.binaryOp('*'),
@@ -139,10 +141,17 @@ inline fn binaryOp(self: *VM, comptime op: u8) !void {
     const b = self.pop().number;
     const a = self.pop().number;
     switch (op) {
+        '>' => self.push(Value{ .boolean = a > b }),
+        '<' => self.push(Value{ .boolean = a < b }),
         '+' => self.push(Value{ .number = a + b }),
         '-' => self.push(Value{ .number = a - b }),
         '*' => self.push(Value{ .number = a * b }),
         '/' => self.push(Value{ .number = a / b }),
         else => return InterpretError.INTERPRET_RUNTIME_ERROR,
     }
+}
+
+fn isFalsey(value: Value) bool {
+    // `nil` is treated as falsey here
+    return value.is(ValueType.nil) or (value.is(ValueType.boolean) and !value.boolean);
 }

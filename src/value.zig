@@ -14,6 +14,10 @@ pub const Value = union(ValueType) {
         };
     }
 
+    pub fn isEqual(self: Value, b: Value) bool {
+        return std.meta.eql(self, b);
+    }
+
     pub fn print(self: Value) void {
         switch (self) {
             .boolean => |b| std.debug.print("{}", .{b}),
@@ -32,4 +36,15 @@ test "type check" {
 
     val = Value{ .nil = {} };
     try std.testing.expect(val.is(ValueType.nil));
+}
+
+test "compare values" {
+    var a = Value{ .number = 123 };
+    var b = Value{ .number = 123 };
+    try std.testing.expect(a.isEqual(b));
+
+    b = Value{ .nil = {} };
+    try std.testing.expect(!a.isEqual(b));
+    a = Value{ .nil = {} };
+    try std.testing.expect(a.isEqual(b));
 }

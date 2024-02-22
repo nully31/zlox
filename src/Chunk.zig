@@ -14,6 +14,9 @@ pub const Opcode = enum(u8) {
     NIL,
     TRUE,
     FALSE,
+    EQUAL, // a != b can be written as !(a == b), thus no opcode for `!=`
+    GREATER, // a <= b <-> !(a > b)
+    LESS, // a >= b <-> !(a < b)
     ADD,
     SUBTRACT,
     MULTIPLY,
