@@ -51,7 +51,7 @@ fn advance(self: *Parser) void {
     }
 }
 
-/// Starts parsing with the highest precedence.
+/// Starts parsing with the second highest precedence.
 fn expression(self: *Parser) !void {
     try self.parsePrecedence(Precedence.ASSIGNMENT);
 }
