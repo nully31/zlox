@@ -7,6 +7,7 @@ pub const Value = union(ValueType) {
     nil: void,
     number: f64,
 
+    /// Returns whether this value is of type `T`.
     pub fn is(self: Value, comptime T: ValueType) bool {
         return switch (self) {
             inline else => |_, tag| tag == T,
