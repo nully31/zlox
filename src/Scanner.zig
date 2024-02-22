@@ -77,7 +77,7 @@ fn advance(self: *Scanner) u8 {
 
 /// Returns the current character without consuming it (lookahead).
 fn peek(self: *Scanner) u8 {
-    if (self.isAtEnd()) return 0; // Pseudo-sentinel
+    if (self.isAtEnd()) return '\x00'; // Pseudo-sentinel
     return self.source[self.current];
 }
 
@@ -85,7 +85,7 @@ fn peek(self: *Scanner) u8 {
 /// without consuming neither it nor the current character.
 /// Returns `null` if the current character is the last character (so the next one doesn't exist).
 fn peekNext(self: *Scanner) u8 {
-    if (self.isAtEnd()) return 0; // Pseudo-sentinel
+    if (self.isAtEnd()) return '\x00'; // Pseudo-sentinel
     return self.source[self.current + 1];
 }
 
