@@ -27,6 +27,11 @@ pub fn init() VM {
     return self;
 }
 
+fn isFalsey(value: Value) bool {
+    // `nil` is treated as falsey here
+    return value.is(ValueType.nil) or (value.is(ValueType.boolean) and !value.boolean);
+}
+
 pub fn deinit(self: *VM) void {
     self.resetStack();
 }
@@ -106,6 +111,7 @@ fn run(self: *VM) !InterpretResult {
             .SUBTRACT => try self.binaryOp('-'),
             .MULTIPLY => try self.binaryOp('*'),
             .DIVIDE => try self.binaryOp('/'),
+            .NOT => self.push(Value{ .boolean = isFalsey(self.pop()) }),
             .NEGATE => {
                 if (!self.peek(0).is(ValueType.number)) {
                     self.runtimeError("Operand must be a number.", .{});

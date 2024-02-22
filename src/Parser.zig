@@ -132,7 +132,8 @@ fn unary(self: *Parser) !void {
 
     // Emit the operator instruction
     switch (operator_type) {
-        TokenType.MINUS => try self.compiler.emitByte(@intFromEnum(Opcode.NEGATE)),
+        .BANG => try self.compiler.emitByte(@intFromEnum(Opcode.NOT)),
+        .MINUS => try self.compiler.emitByte(@intFromEnum(Opcode.NEGATE)),
         else => unreachable,
     }
 }
@@ -174,7 +175,7 @@ const ParseRule = struct {
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // SEMICOLON
         .{ .prefix = null, .infix = binary, .precedence = Precedence.FACTOR }, // SLASH
         .{ .prefix = null, .infix = binary, .precedence = Precedence.FACTOR }, // STAR
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // BANG
+        .{ .prefix = unary, .infix = null, .precedence = Precedence.NONE }, // BANG
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // BANG_EQUAL
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // EQUAL
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // EQUAL_EQUAL

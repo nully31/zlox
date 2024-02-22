@@ -32,6 +32,7 @@ pub fn disassembleInstruction(chunk: *Chunk, offset: usize) usize {
         .SUBTRACT => return simpleInstruction(@tagName(opcode), offset),
         .MULTIPLY => return simpleInstruction(@tagName(opcode), offset),
         .DIVIDE => return simpleInstruction(@tagName(opcode), offset),
+        .NOT => return simpleInstruction(@tagName(opcode), offset),
         .NEGATE => return simpleInstruction(@tagName(opcode), offset),
         .RETURN => return simpleInstruction(@tagName(opcode), offset),
         _ => {
