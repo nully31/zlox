@@ -4,20 +4,23 @@ const Scanner = @import("Scanner.zig");
 const ValueArray = @import("ValueArray.zig");
 const Opcode = @import("Chunk.zig").Opcode;
 const Value = @import("value.zig").Value;
+const Allocator = std.mem.Allocator;
 const Token = Scanner.Token;
 const TokenType = Scanner.TokenType;
 
 /// Parser struct.
 const Parser = @This();
 
+allocator: Allocator,
 compiler: *Compiler,
 current: Token,
 previous: Token,
 hadError: bool,
 panicMode: bool,
 
-pub fn init() Parser {
+pub fn init(allocator: Allocator) Parser {
     return .{
+        .allcator = allocator,
         .compiler = undefined,
         .current = undefined,
         .previous = undefined,
@@ -130,6 +133,8 @@ fn number(self: *Parser) !void {
     try self.compiler.emitConstant(value);
 }
 
+fn string(self: *Parser) !void {}
+
 fn unary(self: *Parser) !void {
     const operator_type = self.previous.type;
 
@@ -190,7 +195,7 @@ const ParseRule = struct {
         .{ .prefix = null, .infix = binary, .precedence = Precedence.COMPARISON }, // LESS
         .{ .prefix = null, .infix = binary, .precedence = Precedence.COMPARISON }, // LESS_EQUAL
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // IDENTIFIER
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // STRING
+        .{ .prefix = string, .infix = null, .precedence = Precedence.NONE }, // STRING
         .{ .prefix = number, .infix = null, .precedence = Precedence.NONE }, // NUMBER
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // AND
         .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // CLASS

@@ -63,10 +63,11 @@ fn peek(self: *VM, distance: usize) Value {
 pub fn interpret(self: *VM, source: []const u8) !InterpretResult {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     defer _ = gpa.deinit();
-    var chunk = Chunk.init(gpa.allocator());
+    const allocator = gpa.allocator();
+    var chunk = Chunk.init(allocator);
     defer chunk.deinit();
 
-    var compiler = Compiler.init(source, &chunk);
+    var compiler = Compiler.init(allocator, source, &chunk);
     try compiler.compile();
 
     self.ip = 0;

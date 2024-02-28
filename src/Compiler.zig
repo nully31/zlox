@@ -7,6 +7,7 @@ const debug = @import("debug.zig");
 const config = @import("config.zig");
 const InterpretError = @import("VM.zig").InterpretError;
 const Value = @import("value.zig").Value;
+const Allocator = std.mem.Allocator;
 const Token = Scanner.Token;
 const TokenType = Scanner.TokenType;
 const Opcode = Chunk.Opcode;
@@ -14,18 +15,20 @@ const Opcode = Chunk.Opcode;
 /// Compiler struct.
 const Compiler = @This();
 
+allocator: Allocator,
 source: []const u8,
 destination: *Chunk,
 scanner: Scanner,
 parser: Parser,
 compiling_chunk: *Chunk,
 
-pub fn init(source: []const u8, destination: *Chunk) Compiler {
+pub fn init(allocator: Allocator, source: []const u8, destination: *Chunk) Compiler {
     return .{
+        .allocatior = allocator,
         .source = source,
         .destination = destination,
         .scanner = Scanner.init(source),
-        .parser = Parser.init(),
+        .parser = Parser.init(allocator),
         .compiling_chunk = destination, // Might change
     };
 }
