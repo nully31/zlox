@@ -8,7 +8,7 @@ pub const Value = union(ValueType) {
     boolean: bool,
     nil: void,
     number: f64,
-    obj: Object,
+    obj: *Object,
 
     /// Returns whether this value is of type `T`.
     pub fn is(self: Value, comptime T: ValueType) bool {
