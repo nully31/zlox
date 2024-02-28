@@ -1,11 +1,14 @@
 const std = @import("std");
+const object = @import("object.zig");
+const Object = object.Object;
 
 /// A constant's type that zlox handles.
-pub const ValueType = enum { boolean, nil, number };
+pub const ValueType = enum { boolean, nil, number, obj };
 pub const Value = union(ValueType) {
     boolean: bool,
     nil: void,
     number: f64,
+    obj: Object,
 
     /// Returns whether this value is of type `T`.
     pub fn is(self: Value, comptime T: ValueType) bool {
@@ -23,6 +26,7 @@ pub const Value = union(ValueType) {
             .boolean => |b| std.debug.print("{}", .{b}),
             .nil => std.debug.print("nil", .{}),
             .number => |n| std.debug.print("{d}", .{n}),
+            else => return,
         }
     }
 };
