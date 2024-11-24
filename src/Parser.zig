@@ -20,7 +20,7 @@ panicMode: bool,
 
 pub fn init(allocator: Allocator) Parser {
     return .{
-        .allcator = allocator,
+        .allocator = allocator,
         .compiler = undefined,
         .current = undefined,
         .previous = undefined,
@@ -133,7 +133,9 @@ fn number(self: *Parser) !void {
     try self.compiler.emitConstant(value);
 }
 
-fn string(self: *Parser) !void {}
+fn string(self: *Parser) !void {
+    _ = self;
+}
 
 fn unary(self: *Parser) !void {
     const operator_type = self.previous.type;

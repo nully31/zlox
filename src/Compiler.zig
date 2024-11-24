@@ -24,7 +24,7 @@ compiling_chunk: *Chunk,
 
 pub fn init(allocator: Allocator, source: []const u8, destination: *Chunk) Compiler {
     return .{
-        .allocatior = allocator,
+        .allocator = allocator,
         .source = source,
         .destination = destination,
         .scanner = Scanner.init(source),
