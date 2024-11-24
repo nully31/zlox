@@ -31,7 +31,7 @@ pub const Value = union(ValueType) {
     }
 };
 
-test "type check" {
+test "check types" {
     var val = Value{ .number = 123.456 };
     try std.testing.expect(val.is(ValueType.number));
 

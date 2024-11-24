@@ -60,7 +60,7 @@ pub fn emitBytes(self: *Compiler, byte1: u8, byte2: u8) !void {
 }
 
 pub fn emitReturn(self: *Compiler) !void {
-    try self.emitByte(@intFromEnum(Opcode.RETURN)); // Might be temporary
+    try self.emitByte(Opcode.RETURN.toByte()); // Might be temporary
 }
 
 pub fn makeConstant(self: *Compiler, value: Value) !u8 {
@@ -75,5 +75,5 @@ pub fn makeConstant(self: *Compiler, value: Value) !u8 {
 }
 
 pub fn emitConstant(self: *Compiler, value: Value) !void {
-    try self.emitBytes(@intFromEnum(Opcode.CONSTANT), try self.makeConstant(value));
+    try self.emitBytes(Opcode.CONSTANT.toByte(), try self.makeConstant(value));
 }

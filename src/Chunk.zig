@@ -25,6 +25,16 @@ pub const Opcode = enum(u8) {
     NEGATE,
     RETURN,
     _,
+
+    /// Returns a byte which represents the current opcode.
+    pub fn toByte(self: Opcode) u8 {
+        return @intFromEnum(self);
+    }
+
+    /// Returns an opcode literal equivalent to the given `byte`.
+    pub fn toOpcode(byte: u8) Opcode {
+        return @enumFromInt(byte);
+    }
 };
 
 count: usize = 0,
@@ -77,7 +87,7 @@ pub fn deinit(self: *Chunk) void {
     self.count = 0;
 }
 
-test "writing to a chunk" {
+test "write to a chunk" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     var chunk = Chunk.init(allocator);
@@ -88,8 +98,8 @@ test "writing to a chunk" {
 
     comptime var i = 0;
     inline while (i < 10) : (i += 1) {
-        try chunk.write(@intFromEnum(Opcode.RETURN), 123);
-        const op: Opcode = @enumFromInt(chunk.code[i]);
+        try chunk.write(Opcode.RETURN.toByte(), 123);
+        const op = Opcode.toOpcode(chunk.code[i]);
         try std.testing.expectEqual(Opcode.RETURN, op);
         if (i < 8) {
             try std.testing.expectEqual(8, chunk.code.len);

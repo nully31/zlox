@@ -100,25 +100,25 @@ fn binary(self: *Parser) !void {
     try self.parsePrecedence(@enumFromInt(@intFromEnum(rule.precedence) + 1));
 
     switch (operator_type) {
-        .BANG_EQUAL => try self.compiler.emitBytes(@intFromEnum(Opcode.EQUAL), @intFromEnum(Opcode.NOT)), // a != b <-> !(a == b)
-        .EQUAL_EQUAL => try self.compiler.emitByte(@intFromEnum(Opcode.EQUAL)),
-        .GREATER => try self.compiler.emitByte(@intFromEnum(Opcode.GREATER)),
-        .GREATER_EQUAL => try self.compiler.emitBytes(@intFromEnum(Opcode.LESS), @intFromEnum(Opcode.NOT)), // a >= b <-> !(a < b)
-        .LESS => try self.compiler.emitByte(@intFromEnum(Opcode.LESS)),
-        .LESS_EQUAL => try self.compiler.emitBytes(@intFromEnum(Opcode.GREATER), @intFromEnum(Opcode.NOT)), // a <= b <-> !(a > b)
-        .PLUS => try self.compiler.emitByte(@intFromEnum(Opcode.ADD)),
-        .MINUS => try self.compiler.emitByte(@intFromEnum(Opcode.SUBTRACT)),
-        .STAR => try self.compiler.emitByte(@intFromEnum(Opcode.MULTIPLY)),
-        .SLASH => try self.compiler.emitByte(@intFromEnum(Opcode.DIVIDE)),
+        .BANG_EQUAL => try self.compiler.emitBytes(Opcode.EQUAL.toByte(), Opcode.NOT.toByte()), // a != b <-> !(a == b)
+        .EQUAL_EQUAL => try self.compiler.emitByte(Opcode.EQUAL.toByte()),
+        .GREATER => try self.compiler.emitByte(Opcode.GREATER.toByte()),
+        .GREATER_EQUAL => try self.compiler.emitBytes(Opcode.LESS.toByte(), Opcode.NOT.toByte()), // a >= b <-> !(a < b)
+        .LESS => try self.compiler.emitByte(Opcode.LESS.toByte()),
+        .LESS_EQUAL => try self.compiler.emitBytes(Opcode.GREATER.toByte(), Opcode.NOT.toByte()), // a <= b <-> !(a > b)
+        .PLUS => try self.compiler.emitByte(Opcode.ADD.toByte()),
+        .MINUS => try self.compiler.emitByte(Opcode.SUBTRACT.toByte()),
+        .STAR => try self.compiler.emitByte(Opcode.MULTIPLY.toByte()),
+        .SLASH => try self.compiler.emitByte(Opcode.DIVIDE.toByte()),
         else => unreachable,
     }
 }
 
 fn literal(self: *Parser) !void {
     switch (self.previous.type) {
-        .FALSE => try self.compiler.emitByte(@intFromEnum(Opcode.FALSE)),
-        .NIL => try self.compiler.emitByte(@intFromEnum(Opcode.NIL)),
-        .TRUE => try self.compiler.emitByte(@intFromEnum(Opcode.TRUE)),
+        .FALSE => try self.compiler.emitByte(Opcode.FALSE.toByte()),
+        .NIL => try self.compiler.emitByte(Opcode.NIL.toByte()),
+        .TRUE => try self.compiler.emitByte(Opcode.TRUE.toByte()),
         else => unreachable,
     }
 }
@@ -145,8 +145,8 @@ fn unary(self: *Parser) !void {
 
     // Emit the operator instruction
     switch (operator_type) {
-        .BANG => try self.compiler.emitByte(@intFromEnum(Opcode.NOT)),
-        .MINUS => try self.compiler.emitByte(@intFromEnum(Opcode.NEGATE)),
+        .BANG => try self.compiler.emitByte(Opcode.NOT.toByte()),
+        .MINUS => try self.compiler.emitByte(Opcode.NEGATE.toByte()),
         else => unreachable,
     }
 }

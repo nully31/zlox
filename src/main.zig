@@ -76,6 +76,7 @@ fn repl(vm: *VM) !void {
 }
 
 test "simple chunk" {
+    const Value = @import("value.zig").Value;
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     var chunk = Chunk.init(allocator);
@@ -86,22 +87,22 @@ test "simple chunk" {
         _ = gpa.deinit();
     }
 
-    var constant = try chunk.addConstant(1.2);
-    try chunk.write(@intFromEnum(Opcode.CONSTANT), 123);
+    var constant = try chunk.addConstant(Value{ .number = 1.2 });
+    try chunk.write(Opcode.CONSTANT.toByte(), 123);
     try chunk.write(@intCast(constant), 123);
 
-    constant = try chunk.addConstant(3.4);
-    try chunk.write(@intFromEnum(Opcode.CONSTANT), 123);
+    constant = try chunk.addConstant(Value{ .number = 3.4 });
+    try chunk.write(Opcode.CONSTANT.toByte(), 123);
     try chunk.write(@intCast(constant), 123);
 
-    try chunk.write(@intFromEnum(Opcode.ADD), 123);
+    try chunk.write(Opcode.ADD.toByte(), 123);
 
-    constant = try chunk.addConstant(5.6);
-    try chunk.write(@intFromEnum(Opcode.CONSTANT), 123);
+    constant = try chunk.addConstant(Value{ .number = 5.6 });
+    try chunk.write(Opcode.CONSTANT.toByte(), 123);
     try chunk.write(@intCast(constant), 123);
 
-    try chunk.write(@intFromEnum(Opcode.DIVIDE), 123);
-    try chunk.write(@intFromEnum(Opcode.NEGATE), 123);
+    try chunk.write(Opcode.DIVIDE.toByte(), 123);
+    try chunk.write(Opcode.NEGATE.toByte(), 123);
 
-    try chunk.write(@intFromEnum(Opcode.RETURN), 123);
+    try chunk.write(Opcode.RETURN.toByte(), 123);
 }
