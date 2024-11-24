@@ -8,7 +8,7 @@ pub const Value = union(ValueType) {
     boolean: bool,
     nil: void,
     number: f64,
-    obj: Object,
+    obj: *Object,
 
     /// Returns whether this value is of type `T`.
     pub fn is(self: Value, comptime T: ValueType) bool {
@@ -26,7 +26,8 @@ pub const Value = union(ValueType) {
             .boolean => |b| std.debug.print("{}", .{b}),
             .nil => std.debug.print("nil", .{}),
             .number => |n| std.debug.print("{d}", .{n}),
-            else => return,
+            .obj => |o| o.print(),
+            // else => return,
         }
     }
 };

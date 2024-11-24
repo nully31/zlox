@@ -2,11 +2,15 @@ const std = @import("std");
 const Compiler = @import("Compiler.zig");
 const Scanner = @import("Scanner.zig");
 const ValueArray = @import("ValueArray.zig");
+const obj = @import("object.zig");
 const Opcode = @import("Chunk.zig").Opcode;
 const Value = @import("value.zig").Value;
 const Allocator = std.mem.Allocator;
 const Token = Scanner.Token;
 const TokenType = Scanner.TokenType;
+const ObjType = obj.ObjType;
+const Object = obj.Object;
+const ObjString = obj.ObjString;
 
 /// Parser struct.
 const Parser = @This();
@@ -129,12 +133,15 @@ fn grouping(self: *Parser) !void {
 }
 
 fn number(self: *Parser) !void {
-    const value = Value{ .number = try std.fmt.parseFloat(f64, self.previous.lexeme) };
-    try self.compiler.emitConstant(value);
+    const number_value = Value{ .number = try std.fmt.parseFloat(f64, self.previous.lexeme) };
+    try self.compiler.emitConstant(number_value);
 }
 
 fn string(self: *Parser) !void {
-    _ = self;
+    // TODO: consider using a different allocator?
+    const obj_string = Object{ .string = ObjString{ .allocator = self.allocator, .chars = self.previous.lexeme[1 .. self.previous.lexeme.len - 1] } };
+    const obj_value = Value{ .obj = try obj_string.allocate() };
+    try self.compiler.emitConstant(obj_value);
 }
 
 fn unary(self: *Parser) !void {
