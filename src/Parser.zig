@@ -15,8 +15,8 @@ allocator: Allocator,
 compiler: *Compiler,
 current: Token,
 previous: Token,
-hadError: bool,
-panicMode: bool,
+had_error: bool,
+panic_mode: bool,
 
 pub fn init(allocator: Allocator) Parser {
     return .{
@@ -24,8 +24,8 @@ pub fn init(allocator: Allocator) Parser {
         .compiler = undefined,
         .current = undefined,
         .previous = undefined,
-        .hadError = false,
-        .panicMode = false,
+        .had_error = false,
+        .panic_mode = false,
     };
 }
 
@@ -226,8 +226,8 @@ const ParseRule = struct {
 /// Thus, after a first error is detected, any other errors will get suppressed.
 /// Panic mode ends when the parser hits a synchronization point (i.e. statement boundaries).
 fn errorAt(self: *Parser, token: *Token, message: []const u8) void {
-    if (self.panicMode) return;
-    self.panicMode = true;
+    if (self.panic_mode) return;
+    self.panic_mode = true;
     std.debug.print("[line {d}] Error", .{token.line});
 
     if (token.type == TokenType.EOF) {
@@ -239,7 +239,7 @@ fn errorAt(self: *Parser, token: *Token, message: []const u8) void {
     }
 
     std.debug.print(": {s}\n", .{message});
-    self.hadError = true;
+    self.had_error = true;
 }
 
 pub fn @"error"(self: *Parser, message: []const u8) void {

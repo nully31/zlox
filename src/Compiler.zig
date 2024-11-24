@@ -37,14 +37,14 @@ pub fn init(allocator: Allocator, source: []const u8, destination: *Chunk) Compi
 pub fn compile(self: *Compiler) !void {
     try self.parser.parse(self);
     try self.end();
-    return if (self.parser.hadError) InterpretError.INTERPRET_COMPILE_ERROR;
+    return if (self.parser.had_error) InterpretError.INTERPRET_COMPILE_ERROR;
 }
 
 /// Emits a return operator.
 fn end(self: *Compiler) !void {
     try self.emitReturn();
     if (config.debug_print_code) {
-        if (!self.parser.hadError) {
+        if (!self.parser.had_error) {
             debug.disassembleChunk(self.compiling_chunk, "code");
         }
     }
