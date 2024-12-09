@@ -17,6 +17,18 @@ pub const Value = union(ValueType) {
         return T == std.meta.activeTag(self);
     }
 
+    pub fn isBool(self: Value) bool {
+        return self.is(ValueType.boolean);
+    }
+
+    pub fn isNil(self: Value) bool {
+        return self.is(ValueType.nil);
+    }
+
+    pub fn isNumber(self: Value) bool {
+        return self.is(ValueType.number);
+    }
+
     pub fn isString(self: Value) bool {
         if (!self.is(ValueType.obj)) return false;
         return self.obj.isObjType(ObjType.string);
@@ -45,13 +57,13 @@ pub const Value = union(ValueType) {
 
 test "check types" {
     var val = Value{ .number = 123.456 };
-    try std.testing.expect(val.is(ValueType.number));
+    try std.testing.expect(val.isNumber());
 
     val = Value{ .boolean = false };
-    try std.testing.expect(val.is(ValueType.boolean));
+    try std.testing.expect(val.isBool());
 
     val = Value{ .nil = {} };
-    try std.testing.expect(val.is(ValueType.nil));
+    try std.testing.expect(val.isNil());
 }
 
 test "compare values" {
