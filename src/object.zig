@@ -13,9 +13,7 @@ pub const Object = union(ObjType) {
     }
 
     pub fn is(self: Object, T: ObjType) bool {
-        return T == switch (self) {
-            .string => ObjType.string,
-        };
+        return T == std.meta.activeTag(self);
     }
 
     pub fn print(self: Object) void {
@@ -27,30 +25,30 @@ pub const Object = union(ObjType) {
 
 pub const ObjString = struct {
     allocator: Allocator,
-    chars: []const u8,
-    heap_chars: []u8 = undefined, // For heap allocation
+    init_chars: []const u8,
+    chars: []u8 = undefined, // For heap allocation
 
     fn copyString(self: ObjString) !*ObjString {
-        const heap_chars_ptr = try self.allocator.alloc(u8, self.chars.len);
-        std.mem.copyForwards(u8, heap_chars_ptr, self.chars);
-        return try self.allocateString(heap_chars_ptr);
+        const ptr = try self.allocator.alloc(u8, self.init_chars.len);
+        std.mem.copyForwards(u8, ptr, self.init_chars);
+        return try self.allocateString(ptr);
     }
 
     fn allocateString(self: ObjString, ptr: []u8) !*ObjString {
         const object = try self.allocator.create(ObjString);
-        object.*.heap_chars = ptr;
+        object.*.chars = ptr;
         return object;
     }
 
     fn print(self: ObjString) void {
-        std.debug.print("{s}", .{self.heap_chars});
+        std.debug.print("{s}", .{self.chars});
     }
 };
 
 test "string object" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    var string = Object{ .string = ObjString{ .allocator = allocator, .chars = "test" } };
+    var string = Object{ .string = ObjString{ .allocator = allocator, .init_chars = "test" } };
     const obj = try string.allocate();
     try std.testing.expect(string.is(ObjType.string));
     @as(*ObjString, @ptrCast(obj)).print();

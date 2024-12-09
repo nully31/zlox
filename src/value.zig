@@ -11,10 +11,8 @@ pub const Value = union(ValueType) {
     obj: *Object,
 
     /// Returns whether this value is of type `T`.
-    pub fn is(self: Value, comptime T: ValueType) bool {
-        return switch (self) {
-            inline else => |_, tag| tag == T,
-        };
+    pub fn is(self: Value, T: ValueType) bool {
+        return T == std.meta.activeTag(self);
     }
 
     pub fn isEqual(self: Value, b: Value) bool {
