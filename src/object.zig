@@ -3,16 +3,16 @@ const Allocator = std.mem.Allocator;
 
 pub const ObjType = enum(u8) { string };
 pub const Object = union(ObjType) {
-    string: ObjString,
+    string: *ObjString,
 
-    pub fn allocate(self: Object) !*Object {
-        switch (self) {
-            .string => |str| return @ptrCast(try str.copyString()),
-            // inline else => |obj| return obj.allocateObj(self.allocator),
+    pub fn allocate(T: anytype) !Object {
+        switch (@TypeOf(T)) {
+            ObjString => return Object{ .string = try T.copyString() },
+            else => unreachable,
         }
     }
 
-    pub fn is(self: Object, T: ObjType) bool {
+    pub fn isObjType(self: Object, T: ObjType) bool {
         return T == std.meta.activeTag(self);
     }
 
@@ -48,9 +48,9 @@ pub const ObjString = struct {
 test "string object" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    var string = Object{ .string = ObjString{ .allocator = allocator, .init_chars = "test" } };
-    const obj = try string.allocate();
-    try std.testing.expect(string.is(ObjType.string));
-    @as(*ObjString, @ptrCast(obj)).print();
+    const string = ObjString{ .allocator = allocator, .init_chars = "test" };
+    const obj = try Object.allocate(string);
+    try std.testing.expect(obj.isObjType(ObjType.string));
+    obj.print();
     std.debug.print("\n", .{});
 }

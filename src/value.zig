@@ -2,25 +2,31 @@ const std = @import("std");
 const object = @import("object.zig");
 const Object = object.Object;
 const ObjString = object.ObjString;
+const ObjType = object.ObjType;
 
 /// A constant's type that zlox handles.
-pub const ValueType = enum { boolean, nil, number, obj };
+pub const ValueType = enum(u8) { boolean, nil, number, obj };
 pub const Value = union(ValueType) {
     boolean: bool,
     nil: void,
     number: f64,
-    obj: *Object,
+    obj: Object,
 
     /// Returns whether this value is of type `T`.
     pub fn is(self: Value, T: ValueType) bool {
         return T == std.meta.activeTag(self);
     }
 
+    pub fn isString(self: Value) bool {
+        if (!self.is(ValueType.obj)) return false;
+        return self.obj.isObjType(ObjType.string);
+    }
+
     pub fn isEqual(self: Value, b: Value) bool {
         return switch (self) {
             .obj => |a| blk: {
-                if (!b.is(ValueType.obj)) break :blk false;
-                break :blk std.mem.eql(u8, @as(*ObjString, @ptrCast(a)).chars, @as(*ObjString, @ptrCast(b.obj)).chars);
+                if (!self.isString() or !b.isString()) break :blk false;
+                break :blk std.mem.eql(u8, a.string.chars, b.obj.string.chars);
             },
             else => std.meta.eql(self, b),
         };
@@ -62,15 +68,13 @@ test "compare values" {
 test "compare strings" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    var string = Object{ .string = ObjString{ .allocator = allocator, .init_chars = "test" } };
-    const string1 = try string.allocate();
-    const a = Value{ .obj = string1 };
+    var string = ObjString{ .allocator = allocator, .init_chars = "test" };
+    const a = Value{ .obj = try Object.allocate(string) };
     var b = a;
     try std.testing.expect(a.isEqual(b));
 
-    string = Object{ .string = ObjString{ .allocator = allocator, .init_chars = "test2" } };
-    const string2 = try string.allocate();
-    b = Value{ .obj = string2 };
+    string = ObjString{ .allocator = allocator, .init_chars = "test2" };
+    b = Value{ .obj = try Object.allocate(string) };
     try std.testing.expect(!a.isEqual(b));
 
     b = Value{ .boolean = false };
