@@ -179,7 +179,7 @@ fn identifierType(self: *Scanner) TokenType {
 /// Once a prefix is found that it could only be one possible reserved word,
 /// this method checks if BOTH the length of the lexeme and the remaining characters match
 /// to ensure the scanning token is the correct keyword and returns the corresponding token type.
-fn checkKeyword(self: *Scanner, start: usize, length: usize, rest: []const u8, @"type": TokenType) TokenType {
+fn checkKeyword(self: *Scanner, comptime start: usize, comptime length: usize, comptime rest: []const u8, comptime @"type": TokenType) TokenType {
     if (self.current - self.start == start + length and
         std.mem.eql(u8, self.source[self.start + start .. self.start + start + length], rest))
     {

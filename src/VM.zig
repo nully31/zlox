@@ -128,7 +128,7 @@ fn run(self: *VM) !InterpretResult {
             .DIVIDE => try self.binaryOp('/'),
             .NOT => self.push(Value{ .boolean = isFalsey(self.pop()) }),
             .NEGATE => {
-                if (!self.peek(0).is(ValueType.number)) {
+                if (!self.peek(0).isNumber()) {
                     self.runtimeError("Operand must be a number.", .{});
                     return InterpretError.INTERPRET_RUNTIME_ERROR;
                 }
@@ -147,7 +147,7 @@ fn run(self: *VM) !InterpretResult {
 }
 
 inline fn binaryOp(self: *VM, comptime op: u8) !void {
-    if (!self.peek(0).is(ValueType.number) or !self.peek(1).is(ValueType.number)) {
+    if (!self.peek(0).isNumber() or !self.peek(1).isNumber()) {
         self.runtimeError("Operands must be numbers.", .{});
         return InterpretError.INTERPRET_RUNTIME_ERROR;
     }
@@ -166,7 +166,7 @@ inline fn binaryOp(self: *VM, comptime op: u8) !void {
 
 fn isFalsey(value: Value) bool {
     // `nil` is treated as falsey here
-    return value.is(ValueType.nil) or (value.is(ValueType.boolean) and !value.boolean);
+    return value.isNil() or (value.isBool() and !value.boolean);
 }
 
 fn concatenate(self: *VM) !void {

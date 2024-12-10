@@ -13,7 +13,7 @@ pub const Value = union(ValueType) {
     obj: Object,
 
     /// Returns whether this value is of type `T`.
-    pub fn is(self: Value, T: ValueType) bool {
+    inline fn is(self: Value, comptime T: ValueType) bool {
         return T == std.meta.activeTag(self);
     }
 
@@ -56,7 +56,7 @@ pub const Value = union(ValueType) {
 };
 
 test "check types" {
-    var val = Value{ .number = 123.456 };
+    var val: Value = .{ .number = 123.456 };
     try std.testing.expect(val.isNumber());
 
     val = Value{ .boolean = false };
@@ -67,8 +67,8 @@ test "check types" {
 }
 
 test "compare values" {
-    var a = Value{ .number = 123 };
-    var b = Value{ .number = 123 };
+    var a: Value = .{ .number = 123 };
+    var b: Value = .{ .number = 123 };
     try std.testing.expect(a.isEqual(b));
 
     b = Value{ .nil = {} };
@@ -80,8 +80,8 @@ test "compare values" {
 test "compare strings" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    var string = ObjString{ .allocator = allocator, .init_chars = "test" };
-    const a = Value{ .obj = try Object.allocate(string) };
+    var string: ObjString = .{ .allocator = allocator, .init_chars = "test" };
+    const a: Value = .{ .obj = try Object.allocate(string) };
     var b = a;
     try std.testing.expect(a.isEqual(b));
 
