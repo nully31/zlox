@@ -31,13 +31,17 @@ pub const ObjString = struct {
     fn copyString(self: ObjString) !*ObjString {
         const ptr = try self.allocator.alloc(u8, self.init_chars.len);
         std.mem.copyForwards(u8, ptr, self.init_chars);
-        return try self.allocateString(ptr);
+        return try allocateString(self.allocator, ptr);
     }
 
-    fn allocateString(self: ObjString, ptr: []u8) !*ObjString {
-        const object = try self.allocator.create(ObjString);
+    fn allocateString(allocator: Allocator, ptr: []u8) !*ObjString {
+        const object = try allocator.create(ObjString);
         object.*.chars = ptr;
         return object;
+    }
+
+    pub fn takeString(allocator: Allocator, chars: []u8) !*ObjString {
+        return allocateString(allocator, chars);
     }
 
     fn print(self: ObjString) void {

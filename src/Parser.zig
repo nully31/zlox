@@ -138,9 +138,9 @@ fn number(self: *Parser) !void {
 }
 
 fn string(self: *Parser) !void {
-    // TODO: consider using a different allocator?
-    const obj_string = ObjString{ .allocator = self.allocator, .chars = self.previous.lexeme[1 .. self.previous.lexeme.len - 1] };
-    const obj_value = Value{ .obj = try Object.allocate(obj_string) };
+    // TODO: consider using a different allocator
+    const obj_string = ObjString{ .allocator = self.allocator, .init_chars = self.previous.lexeme[1 .. self.previous.lexeme.len - 1] };
+    const obj_value: Value = .{ .obj = try Object.allocate(obj_string) };
     try self.compiler.emitConstant(obj_value);
 }
 

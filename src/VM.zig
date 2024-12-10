@@ -4,10 +4,11 @@ const ValueArray = @import("ValueArray.zig");
 const Compiler = @import("Compiler.zig");
 const debug = @import("debug.zig");
 const config = @import("config.zig");
-const val = @import("value.zig");
+const Value = @import("value.zig").Value;
+const ValueType = @import("value.zig").ValueType;
+const Object = @import("object.zig").Object;
+const ObjString = @import("object.zig").ObjString;
 const Opcode = Chunk.Opcode;
-const Value = val.Value;
-const ValueType = val.ValueType;
 
 /// A stack-based virtual machine struct.
 /// Use `init()` to initialize the VM instance.
@@ -110,7 +111,18 @@ fn run(self: *VM) !InterpretResult {
             },
             .GREATER => try self.binaryOp('>'),
             .LESS => try self.binaryOp('<'),
-            .ADD => try self.binaryOp('+'),
+            .ADD => {
+                if (self.peek(0).isString() and self.peek(1).isString()) {
+                    try self.concatenate();
+                } else if (self.peek(0).isNumber() and self.peek(1).isNumber()) {
+                    const b = self.pop().number;
+                    const a = self.pop().number;
+                    self.push(Value{ .number = a + b });
+                } else {
+                    self.runtimeError("Operands must be two numbers or two strings.", .{});
+                    return InterpretError.INTERPRET_RUNTIME_ERROR;
+                }
+            },
             .SUBTRACT => try self.binaryOp('-'),
             .MULTIPLY => try self.binaryOp('*'),
             .DIVIDE => try self.binaryOp('/'),
@@ -155,4 +167,14 @@ inline fn binaryOp(self: *VM, comptime op: u8) !void {
 fn isFalsey(value: Value) bool {
     // `nil` is treated as falsey here
     return value.is(ValueType.nil) or (value.is(ValueType.boolean) and !value.boolean);
+}
+
+fn concatenate(self: *VM) !void {
+    const b = self.pop().obj.string;
+    const a = self.pop().obj.string;
+    const new_chars = try a.allocator.alloc(u8, a.chars.len + b.chars.len); // TODO: use a proper allocator
+    @memcpy(new_chars[0..a.chars.len], a.chars);
+    @memcpy(new_chars[a.chars.len..], b.chars);
+    const result: Object = .{ .string = try ObjString.takeString(a.allocator, new_chars) }; // TODO: use a proper allocator
+    self.push(Value{ .obj = result });
 }
