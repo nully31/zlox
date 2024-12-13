@@ -9,6 +9,7 @@ const ValueType = @import("value.zig").ValueType;
 const Object = @import("object.zig").Object;
 const ObjString = @import("object.zig").ObjString;
 const Opcode = Chunk.Opcode;
+const Allocator = std.mem.Allocator;
 
 /// A stack-based virtual machine struct.
 /// Use `init()` to initialize the VM instance.
@@ -57,6 +58,50 @@ fn pop(self: *VM) Value {
 
 fn peek(self: *VM, distance: usize) Value {
     return self.stack[self.stack_top - 1 - distance];
+}
+
+/// Runs VM in interactive mode, predominantly known as "REPL" (Read-Eval-Print-Loop).
+/// Ends reading input after reading an `EOF` (of which input is 'Ctrl-D' in common shells).
+pub fn repl(self: *VM) !void {
+    const stdin = std.io.getStdIn().reader();
+    const stdout = std.io.getStdOut().writer();
+
+    var buf: [1024]u8 = undefined;
+    var br = std.io.bufferedReader(stdin);
+    var reader = br.reader();
+    while (true) {
+        try stdout.print("> ", .{});
+
+        if (reader.readUntilDelimiterOrEof(buf[0..], '\n') catch |err| {
+            std.debug.print("Could not read input: {}\n", .{err});
+            return err;
+        }) |line| {
+            _ = try self.interpret(line);
+        } else {
+            try stdout.print("\n", .{});
+            break;
+        }
+    }
+}
+
+/// Runs VM which executes the given lox source code specified by `path`.
+/// Caller owns the read source input.
+pub fn runFile(self: *VM, path: []const u8, allocator: Allocator) !void {
+    const source: []u8 = try readFile(path, allocator);
+    defer allocator.free(source);
+    _ = try self.interpret(source);
+}
+
+/// Reads out the file specified by `path` onto heap memory.
+fn readFile(path: []const u8, allocator: Allocator) ![]u8 {
+    var file = std.fs.cwd().openFile(path, .{}) catch |err| {
+        std.debug.print("Could not open file: {} \"{s}\"\n", .{ err, path });
+        return err;
+    };
+    return file.readToEndAlloc(allocator, 1024 * 1024) catch |err| {
+        std.debug.print("Could not read file: {}\n", .{err});
+        return err;
+    }; // 1MB max
 }
 
 /// Drives a pipeline to scan, compile, and execute the code.
