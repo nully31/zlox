@@ -31,7 +31,7 @@ pub const Value = union(ValueType) {
 
     pub fn isString(self: Value) bool {
         if (!self.is(ValueType.obj)) return false;
-        return self.obj.isObjType(ObjType.string);
+        return self.obj.is(ObjType.string);
     }
 
     pub fn isEqual(self: Value, b: Value) bool {
@@ -80,13 +80,13 @@ test "compare values" {
 test "compare strings" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
-    var string: ObjString = .{ .allocator = allocator, .init_chars = "test" };
-    const a: Value = .{ .obj = try Object.allocate(string) };
+    var string = ObjString.init("test1");
+    const a: Value = .{ .obj = try Object.allocate(string, allocator) };
     var b = a;
     try std.testing.expect(a.isEqual(b));
 
-    string = ObjString{ .allocator = allocator, .init_chars = "test2" };
-    b = Value{ .obj = try Object.allocate(string) };
+    string = ObjString.init("test2");
+    b = Value{ .obj = try Object.allocate(string, allocator) };
     try std.testing.expect(!a.isEqual(b));
 
     b = Value{ .boolean = false };

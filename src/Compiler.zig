@@ -15,20 +15,18 @@ const Opcode = Chunk.Opcode;
 /// Compiler struct.
 const Compiler = @This();
 
-allocator: Allocator,
 source: []const u8,
 destination: *Chunk,
 scanner: Scanner,
 parser: Parser,
 compiling_chunk: *Chunk,
 
-pub fn init(allocator: Allocator, source: []const u8, destination: *Chunk) Compiler {
+pub fn init(source: []const u8, destination: *Chunk) Compiler {
     return .{
-        .allocator = allocator,
         .source = source,
         .destination = destination,
         .scanner = Scanner.init(source),
-        .parser = Parser.init(allocator),
+        .parser = Parser.init(),
         .compiling_chunk = destination, // Might change
     };
 }

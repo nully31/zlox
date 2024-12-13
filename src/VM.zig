@@ -23,6 +23,10 @@ ip: usize = undefined, // The intruction pointer points at the next byte to be r
 stack: [config.stack_max]Value = undefined,
 stack_top: usize = undefined, // This points at the first *not-in-use* element of the stack
 
+// TODO: consider making them struct members rather than namespaced global variables?
+var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+pub const const_allocator = gpa.allocator();
+
 pub fn init() VM {
     var self = VM{};
     self.resetStack();
@@ -31,33 +35,11 @@ pub fn init() VM {
 
 pub fn deinit(self: *VM) void {
     self.resetStack();
+    _ = gpa.deinit();
 }
 
 inline fn resetStack(self: *VM) void {
     self.stack_top = 0;
-}
-
-fn runtimeError(self: *VM, comptime fmt: []const u8, args: anytype) void {
-    std.debug.print(fmt, args);
-    std.debug.print("\n", .{});
-
-    const line = self.chunk.lines[self.ip - 1];
-    std.debug.print("[line {}] in script\n", .{line});
-    self.resetStack();
-}
-
-fn push(self: *VM, value: Value) void {
-    self.stack[self.stack_top] = value;
-    self.stack_top += 1;
-}
-
-fn pop(self: *VM) Value {
-    self.stack_top -= 1;
-    return self.stack[self.stack_top];
-}
-
-fn peek(self: *VM, distance: usize) Value {
-    return self.stack[self.stack_top - 1 - distance];
 }
 
 /// Runs VM in interactive mode, predominantly known as "REPL" (Read-Eval-Print-Loop).
@@ -85,10 +67,11 @@ pub fn repl(self: *VM) !void {
 }
 
 /// Runs VM which executes the given lox source code specified by `path`.
-/// Caller owns the read source input.
-pub fn runFile(self: *VM, path: []const u8, allocator: Allocator) !void {
+pub fn runFile(self: *VM, path: []const u8) !void {
+    var buffer: [1024 * 1024]u8 = undefined;
+    var fba = std.heap.FixedBufferAllocator.init(&buffer);
+    const allocator = fba.allocator();
     const source: []u8 = try readFile(path, allocator);
-    defer allocator.free(source);
     _ = try self.interpret(source);
 }
 
@@ -104,16 +87,38 @@ fn readFile(path: []const u8, allocator: Allocator) ![]u8 {
     }; // 1MB max
 }
 
+fn runtimeError(self: *VM, comptime fmt: []const u8, args: anytype) void {
+    std.debug.print(fmt, args);
+    std.debug.print("\n", .{});
+
+    const line = self.chunk.lines[self.ip - 1];
+    std.debug.print("[line {}] in script\n", .{line});
+    self.resetStack();
+}
+
+fn push(self: *VM, value: Value) void {
+    self.stack[self.stack_top] = value;
+    self.stack_top += 1;
+}
+
+fn pop(self: *VM) Value {
+    self.stack_top -= 1;
+    return self.stack[self.stack_top];
+}
+
+fn peek(self: *VM, distance: usize) Value {
+    return self.stack[self.stack_top - 1 - distance];
+}
+
 /// Drives a pipeline to scan, compile, and execute the code.
 /// Returns Error if an error occurs during compilation or runtime, otherwise returns ok.
 pub fn interpret(self: *VM, source: []const u8) !InterpretResult {
-    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    defer _ = gpa.deinit();
-    const allocator = gpa.allocator();
-    var chunk = Chunk.init(allocator);
-    defer chunk.deinit();
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    defer arena.deinit();
+    const chunk_allocator = arena.allocator();
+    var chunk = Chunk.init(chunk_allocator);
 
-    var compiler = Compiler.init(allocator, source, &chunk);
+    var compiler = Compiler.init(source, &chunk);
     try compiler.compile();
 
     self.ip = 0;
@@ -217,9 +222,9 @@ fn isFalsey(value: Value) bool {
 fn concatenate(self: *VM) !void {
     const b = self.pop().obj.string;
     const a = self.pop().obj.string;
-    const new_chars = try a.allocator.alloc(u8, a.chars.len + b.chars.len); // TODO: use a proper allocator
+    const new_chars = try const_allocator.alloc(u8, a.chars.len + b.chars.len);
     @memcpy(new_chars[0..a.chars.len], a.chars);
     @memcpy(new_chars[a.chars.len..], b.chars);
-    const result: Object = .{ .string = try ObjString.takeString(a.allocator, new_chars) }; // TODO: use a proper allocator
+    const result: Object = .{ .string = try ObjString.takeString(new_chars) };
     self.push(Value{ .obj = result });
 }

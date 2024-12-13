@@ -9,7 +9,7 @@ const Opcode = Chunk.Opcode;
 const MainError = error{argsTooMany};
 
 pub fn main() !void {
-    var buffer: [1024 * 1024]u8 = undefined;
+    var buffer: [1024]u8 = undefined;
     var fba = std.heap.FixedBufferAllocator.init(&buffer);
     const allocator = fba.allocator();
 
@@ -23,7 +23,7 @@ pub fn main() !void {
     if (args.len == 1) {
         try vm.repl();
     } else if (args.len == 2) {
-        try vm.runFile(args[1], allocator);
+        try vm.runFile(args[1]);
     } else {
         std.debug.print("Usage: zlox [path]\n", .{});
         std.debug.print("If no [path] is provided, zlox starts in interactive mode.\n", .{});

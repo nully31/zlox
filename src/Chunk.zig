@@ -43,8 +43,9 @@ lines: []usize = &.{}, // Indicates which lines the instructions occur in the so
 constants: ValueArray = undefined, // Constant pool
 allocator: Allocator,
 
+/// Caller owns the instance thus responsible of freeing it.
 pub fn init(allocator: Allocator) Chunk {
-    var chunk = Chunk{ .allocator = allocator };
+    var chunk: Chunk = .{ .allocator = allocator };
     chunk.constants = ValueArray.init(allocator);
     return chunk;
 }
