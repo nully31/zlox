@@ -1,7 +1,6 @@
 const std = @import("std");
+const VM = @import("VM.zig");
 const Allocator = std.mem.Allocator;
-
-const allocator = @import("VM.zig").const_allocator;
 
 pub const ObjType = enum(u8) { string };
 pub const Object = union(ObjType) {
@@ -40,13 +39,13 @@ pub const ObjString = struct {
     }
 
     fn copyString(self: ObjString) !*ObjString {
-        const ptr = try allocator.alloc(u8, self.chars.len);
+        const ptr = try VM.const_allocator.alloc(u8, self.chars.len);
         std.mem.copyForwards(u8, ptr, self.chars);
         return try allocateString(ptr);
     }
 
     fn allocateString(ptr: []u8) !*ObjString {
-        const object = try allocator.create(ObjString);
+        const object = try VM.const_allocator.create(ObjString);
         object.*.chars = ptr;
         return object;
     }
@@ -61,8 +60,8 @@ pub const ObjString = struct {
     }
 
     fn destroy(self: *ObjString) !void {
-        _ = try allocator.realloc(self.chars, 0);
-        allocator.destroy(self);
+        _ = try VM.const_allocator.realloc(self.chars, 0);
+        VM.const_allocator.destroy(self);
     }
 };
 

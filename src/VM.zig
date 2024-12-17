@@ -18,14 +18,17 @@ const VM = @This();
 pub const InterpretResult = enum { INTERPRET_OK };
 pub const InterpretError = error{ INTERPRET_COMPILE_ERROR, INTERPRET_RUNTIME_ERROR };
 
+// TODO: consider making them struct members rather than namespaced global variables?
+// var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+// pub const const_allocator = gpa.allocator();
+var g_arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+pub const const_allocator = g_arena.allocator();
+pub var objects: ?*Object = null;
+
 chunk: *Chunk = undefined,
 ip: usize = undefined, // The intruction pointer points at the next byte to be read
 stack: [config.stack_max]Value = undefined,
 stack_top: usize = undefined, // This points at the first *not-in-use* element of the stack
-
-// TODO: consider making them struct members rather than namespaced global variables?
-var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-pub const const_allocator = gpa.allocator();
 
 pub fn init() VM {
     var self = VM{};
@@ -34,12 +37,16 @@ pub fn init() VM {
 }
 
 pub fn deinit(self: *VM) void {
+    defer _ = g_arena.deinit();
     self.resetStack();
-    _ = gpa.deinit();
 }
 
 inline fn resetStack(self: *VM) void {
     self.stack_top = 0;
+}
+
+inline fn freeObjects(self: *VM) !void {
+    _ = self;
 }
 
 /// Runs VM in interactive mode, predominantly known as "REPL" (Read-Eval-Print-Loop).
