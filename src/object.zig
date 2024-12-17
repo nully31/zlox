@@ -1,12 +1,14 @@
 const std = @import("std");
 const Allocator = std.mem.Allocator;
+
 const allocator = @import("VM.zig").const_allocator;
 
 pub const ObjType = enum(u8) { string };
 pub const Object = union(ObjType) {
     string: *ObjString,
 
-    pub fn allocate(T: anytype) !Object {
+    /// Create an instance of the object on the heap.
+    pub fn create(T: anytype) !Object {
         switch (@TypeOf(T)) {
             ObjString => return Object{ .string = try T.copyString() },
             else => unreachable,
@@ -19,7 +21,13 @@ pub const Object = union(ObjType) {
 
     pub fn print(self: Object) void {
         switch (self) {
-            inline else => |obj| obj.print(),
+            inline else => |o| o.print(),
+        }
+    }
+
+    pub fn destroy(self: Object) !void {
+        switch (self) {
+            inline else => |o| try o.destroy(),
         }
     }
 };
@@ -48,15 +56,21 @@ pub const ObjString = struct {
         return allocateString(chars);
     }
 
-    fn print(self: ObjString) void {
+    fn print(self: *ObjString) void {
         std.debug.print("{s}", .{self.chars});
+    }
+
+    fn destroy(self: *ObjString) !void {
+        _ = try allocator.realloc(self.chars, 0);
+        allocator.destroy(self);
     }
 };
 
 test "string object" {
     const string = ObjString.init("test");
-    const obj = try Object.allocate(string);
+    const obj = try Object.create(string);
     try std.testing.expect(obj.is(ObjType.string));
     obj.print();
     std.debug.print("\n", .{});
+    try obj.destroy();
 }

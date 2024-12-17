@@ -81,12 +81,12 @@ test "compare strings" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     var string = ObjString.init("test1");
-    const a: Value = .{ .obj = try Object.allocate(string, allocator) };
+    const a: Value = .{ .obj = try Object.create(string, allocator) };
     var b = a;
     try std.testing.expect(a.isEqual(b));
 
     string = ObjString.init("test2");
-    b = Value{ .obj = try Object.allocate(string, allocator) };
+    b = Value{ .obj = try Object.create(string, allocator) };
     try std.testing.expect(!a.isEqual(b));
 
     b = Value{ .boolean = false };
