@@ -43,6 +43,7 @@ pub const ObjString = struct {
         return object;
     }
 
+    /// Claims ownership of an already existing string on the heap.
     pub fn takeString(chars: []u8) !*ObjString {
         return allocateString(chars);
     }

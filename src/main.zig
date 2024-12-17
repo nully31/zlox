@@ -26,7 +26,7 @@ pub fn main() !void {
         try vm.runFile(args[1]);
     } else {
         std.debug.print("Usage: zlox [path]\n", .{});
-        std.debug.print("If no [path] is provided, zlox starts in interactive mode.\n", .{});
+        std.debug.print("If no path is provided, zlox starts in interactive mode.\n", .{});
         return MainError.argsTooMany;
     }
 }
