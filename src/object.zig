@@ -2,37 +2,56 @@ const std = @import("std");
 const VM = @import("VM.zig");
 const Allocator = std.mem.Allocator;
 
-pub const ObjType = enum(u8) { string };
-pub const Object = union(ObjType) {
-    string: *ObjString,
+pub const ObjType = enum { string };
 
-    /// Create an instance of the object on the heap.
-    pub fn create(T: anytype) !Object {
-        switch (@TypeOf(T)) {
-            ObjString => return Object{ .string = try T.copyString() },
-            else => unreachable,
-        }
+pub const Object = struct {
+    variant: ObjType,
+    createFn: *const fn (self: *Object) Allocator.Error!*Object,
+    destroyFn: *const fn (self: *Object) void,
+    printFn: *const fn (self: *Object) void,
+
+    pub fn create(self: *Object) Allocator.Error!*Object {
+        return try self.createFn(self);
     }
 
-    pub fn is(self: Object, T: ObjType) bool {
-        return T == std.meta.activeTag(self);
+    pub fn destroy(self: *Object) void {
+        return self.destroyFn(self);
     }
 
-    pub fn print(self: Object) void {
-        switch (self) {
-            inline else => |o| o.print(),
-        }
+    pub fn print(self: *Object) void {
+        return self.printFn(self);
     }
 
-    pub fn destroy(self: Object) !void {
-        switch (self) {
-            inline else => |o| try o.destroy(),
-        }
+    pub fn is(self: *Object, V: ObjType) bool {
+        return self.variant == V;
     }
 };
 
 pub const ObjString = struct {
+    obj: Object = .{
+        .variant = ObjType.string,
+        .createFn = create,
+        .destroyFn = destroy,
+        .printFn = print,
+    },
     chars: []u8,
+
+    fn create(object: *Object) Allocator.Error!*Object {
+        const self: *ObjString = @fieldParentPtr("obj", object);
+        const t = try self.copyString();
+        return &t.obj;
+    }
+
+    fn destroy(object: *Object) void {
+        const self: *ObjString = @fieldParentPtr("obj", object);
+        _ = VM.const_allocator.realloc(self.chars, 0) catch unreachable; // freeing always succeeds
+        VM.const_allocator.destroy(self);
+    }
+
+    fn print(object: *Object) void {
+        const self: *ObjString = @fieldParentPtr("obj", object);
+        std.debug.print("{s}", .{self.chars});
+    }
 
     pub fn init(char: []const u8) ObjString {
         return .{ .chars = @constCast(char) };
@@ -41,7 +60,9 @@ pub const ObjString = struct {
     fn copyString(self: ObjString) !*ObjString {
         const ptr = try VM.const_allocator.alloc(u8, self.chars.len);
         std.mem.copyForwards(u8, ptr, self.chars);
-        return try allocateString(ptr);
+        const s_obj = try allocateString(ptr);
+        s_obj.obj = self.obj;
+        return s_obj;
     }
 
     fn allocateString(ptr: []u8) !*ObjString {
@@ -54,22 +75,13 @@ pub const ObjString = struct {
     pub fn takeString(chars: []u8) !*ObjString {
         return allocateString(chars);
     }
-
-    fn print(self: *ObjString) void {
-        std.debug.print("{s}", .{self.chars});
-    }
-
-    fn destroy(self: *ObjString) !void {
-        _ = try VM.const_allocator.realloc(self.chars, 0);
-        VM.const_allocator.destroy(self);
-    }
 };
 
 test "string object" {
-    const string = ObjString.init("test");
-    const obj = try Object.create(string);
+    var string = ObjString.init("test");
+    var obj = try string.obj.create();
     try std.testing.expect(obj.is(ObjType.string));
     obj.print();
     std.debug.print("\n", .{});
-    try obj.destroy();
+    obj.destroy();
 }
