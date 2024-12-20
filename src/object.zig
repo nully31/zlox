@@ -5,7 +5,7 @@ const Allocator = std.mem.Allocator;
 pub const ObjType = enum { string };
 
 pub const Object = struct {
-    variant: ObjType,
+    type: ObjType,
     createFn: *const fn (self: *Object) Allocator.Error!*Object,
     destroyFn: *const fn (self: *Object) void,
     printFn: *const fn (self: *Object) void,
@@ -23,13 +23,13 @@ pub const Object = struct {
     }
 
     pub fn is(self: *Object, V: ObjType) bool {
-        return self.variant == V;
+        return self.type == V;
     }
 };
 
 pub const ObjString = struct {
     obj: Object = .{
-        .variant = ObjType.string,
+        .type = ObjType.string,
         .createFn = create,
         .destroyFn = destroy,
         .printFn = print,
