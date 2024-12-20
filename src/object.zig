@@ -2,27 +2,43 @@ const std = @import("std");
 const VM = @import("VM.zig");
 const Allocator = std.mem.Allocator;
 
-pub const ObjType = enum { string };
+/// List of `Object` type variants.
+pub const ObjType = enum(u8) { string };
 
 /// Object interface struct.
 pub const Object = struct {
     type: ObjType,
-    createFn: *const fn (self: *Object) Allocator.Error!*Object,
-    destroyFn: *const fn (self: *Object) void,
-    printFn: *const fn (self: *Object) void,
+    vtable: *const VTable = undefined,
+
+    const VTable = struct {
+        create: *const fn (self: *Object) Allocator.Error!*Object,
+        destroy: *const fn (self: *Object) void,
+        print: *const fn (self: *Object) void,
+    };
+
+    pub fn init(comptime T: type) Object {
+        return .{
+            .type = T.obj_type,
+            .vtable = &.{
+                .create = T.create,
+                .destroy = T.destroy,
+                .print = T.print,
+            },
+        };
+    }
 
     /// Allocates self object onto heap.
     pub fn create(self: *Object) Allocator.Error!*Object {
-        return try self.createFn(self);
+        return try self.vtable.create(self);
     }
 
     /// Free self object.
     pub fn destroy(self: *Object) void {
-        return self.destroyFn(self);
+        return self.vtable.destroy(self);
     }
 
     pub fn print(self: *Object) void {
-        return self.printFn(self);
+        return self.vtable.print(self);
     }
 
     pub fn is(self: *Object, V: ObjType) bool {
@@ -30,14 +46,12 @@ pub const Object = struct {
     }
 };
 
+/// A variant of `Object` type that can hold a string.
 pub const ObjString = struct {
-    obj: Object = .{
-        .type = ObjType.string,
-        .createFn = create,
-        .destroyFn = destroy,
-        .printFn = print,
-    },
     chars: []u8,
+    obj: Object,
+
+    const obj_type = ObjType.string;
 
     fn create(object: *Object) Allocator.Error!*Object {
         const self: *ObjString = @fieldParentPtr("obj", object);
@@ -57,20 +71,22 @@ pub const ObjString = struct {
     }
 
     pub fn init(char: []const u8) ObjString {
-        return .{ .chars = @constCast(char) };
+        return .{
+            .chars = @constCast(char),
+            .obj = Object.init(ObjString),
+        };
     }
 
     fn copyString(self: ObjString) !*ObjString {
         const ptr = try VM.const_allocator.alloc(u8, self.chars.len);
         std.mem.copyForwards(u8, ptr, self.chars);
-        const s_obj = try allocateString(ptr);
-        s_obj.obj = self.obj;
-        return s_obj;
+        return try allocateString(ptr);
     }
 
     fn allocateString(ptr: []u8) !*ObjString {
         const object = try VM.const_allocator.create(ObjString);
-        object.*.chars = ptr;
+        object.chars = ptr;
+        object.obj = Object.init(ObjString);
         return object;
     }
 
@@ -84,6 +100,7 @@ test "string object" {
     var string = ObjString.init("test");
     var obj = try string.obj.create();
     try std.testing.expect(obj.is(ObjType.string));
+    std.debug.print("\n", .{});
     obj.print();
     std.debug.print("\n", .{});
     obj.destroy();
