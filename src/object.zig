@@ -4,16 +4,19 @@ const Allocator = std.mem.Allocator;
 
 pub const ObjType = enum { string };
 
+/// Object interface struct.
 pub const Object = struct {
     type: ObjType,
     createFn: *const fn (self: *Object) Allocator.Error!*Object,
     destroyFn: *const fn (self: *Object) void,
     printFn: *const fn (self: *Object) void,
 
+    /// Allocates self object onto heap.
     pub fn create(self: *Object) Allocator.Error!*Object {
         return try self.createFn(self);
     }
 
+    /// Free self object.
     pub fn destroy(self: *Object) void {
         return self.destroyFn(self);
     }
@@ -44,7 +47,7 @@ pub const ObjString = struct {
 
     fn destroy(object: *Object) void {
         const self: *ObjString = @fieldParentPtr("obj", object);
-        _ = VM.const_allocator.realloc(self.chars, 0) catch unreachable; // freeing always succeeds
+        _ = VM.const_allocator.realloc(self.chars, 0) catch unreachable; // free always succeeds
         VM.const_allocator.destroy(self);
     }
 
