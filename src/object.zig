@@ -11,8 +11,8 @@ pub const Object = struct {
     vtable: *const VTable = undefined,
 
     const VTable = struct {
-        create: *const fn (self: *Object) Allocator.Error!*Object,
-        destroy: *const fn (self: *Object) void,
+        create: *const fn (self: *Object, allocator: Allocator) Allocator.Error!*Object,
+        destroy: *const fn (self: *Object, allocator: Allocator) void,
         print: *const fn (self: *Object) void,
     };
 
@@ -28,13 +28,13 @@ pub const Object = struct {
     }
 
     /// Allocates self object onto heap.
-    pub fn create(self: *Object) Allocator.Error!*Object {
-        return try self.vtable.create(self);
+    pub fn create(self: *Object, allocator: Allocator) Allocator.Error!*Object {
+        return try self.vtable.create(self, allocator);
     }
 
     /// Free self object.
-    pub fn destroy(self: *Object) void {
-        return self.vtable.destroy(self);
+    pub fn destroy(self: *Object, allocator: Allocator) void {
+        return self.vtable.destroy(self, allocator);
     }
 
     pub fn print(self: *Object) void {
@@ -53,16 +53,16 @@ pub const ObjString = struct {
 
     const obj_type = ObjType.string;
 
-    fn create(object: *Object) Allocator.Error!*Object {
+    fn create(object: *Object, allocator: Allocator) Allocator.Error!*Object {
         const self: *ObjString = @fieldParentPtr("obj", object);
-        const t = try self.copyString();
+        const t = try self.copyString(allocator);
         return &t.obj;
     }
 
-    fn destroy(object: *Object) void {
+    fn destroy(object: *Object, allocator: Allocator) void {
         const self: *ObjString = @fieldParentPtr("obj", object);
-        _ = VM.const_allocator.realloc(self.chars, 0) catch unreachable; // free always succeeds
-        VM.const_allocator.destroy(self);
+        _ = allocator.realloc(self.chars, 0) catch unreachable; // free always succeeds
+        allocator.destroy(self);
     }
 
     fn print(object: *Object) void {
@@ -77,31 +77,33 @@ pub const ObjString = struct {
         };
     }
 
-    fn copyString(self: ObjString) !*ObjString {
-        const ptr = try VM.const_allocator.alloc(u8, self.chars.len);
+    /// Allocates the attached string onto heap, then allocates the object itself.
+    /// Uses the same allocator for allocating both.
+    fn copyString(self: ObjString, allocator: Allocator) !*ObjString {
+        const ptr = try allocator.alloc(u8, self.chars.len);
         std.mem.copyForwards(u8, ptr, self.chars);
-        return try allocateString(ptr);
+        return try allocateString(allocator, ptr);
     }
 
-    fn allocateString(ptr: []u8) !*ObjString {
-        const object = try VM.const_allocator.create(ObjString);
+    fn allocateString(allocator: Allocator, ptr: []u8) !*ObjString {
+        const object = try allocator.create(ObjString);
         object.chars = ptr;
         object.obj = Object.init(ObjString);
         return object;
     }
 
-    /// Claims ownership of an already existing string on the heap.
-    pub fn takeString(chars: []u8) !*ObjString {
-        return allocateString(chars);
+    /// Claims ownership of an already allocated string.
+    pub fn takeString(allocator: Allocator, chars: []u8) !*ObjString {
+        return allocateString(allocator, chars);
     }
 };
 
 test "string object" {
     var string = ObjString.init("test");
-    var obj = try string.obj.create();
+    var obj = try string.obj.create(VM.const_allocator);
     try std.testing.expect(obj.is(ObjType.string));
     std.debug.print("\n", .{});
     obj.print();
     std.debug.print("\n", .{});
-    obj.destroy();
+    obj.destroy(VM.const_allocator);
 }
