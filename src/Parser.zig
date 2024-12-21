@@ -1,4 +1,5 @@
 const std = @import("std");
+const VM = @import("VM.zig");
 const Compiler = @import("Compiler.zig");
 const Scanner = @import("Scanner.zig");
 const ValueArray = @import("ValueArray.zig");
@@ -8,7 +9,6 @@ const Value = @import("value.zig").Value;
 const Allocator = std.mem.Allocator;
 const Token = Scanner.Token;
 const TokenType = Scanner.TokenType;
-const ObjType = obj.ObjType;
 const Object = obj.Object;
 const ObjString = obj.ObjString;
 
@@ -136,9 +136,9 @@ fn number(self: *Parser) !void {
 }
 
 fn string(self: *Parser) !void {
-    const obj_string = ObjString.init(self.previous.lexeme[1 .. self.previous.lexeme.len - 1]);
-    const obj_value: Value = .{ .obj = try Object.create(obj_string) };
-    try self.compiler.emitConstant(obj_value);
+    var str = ObjString.init(self.previous.lexeme[1 .. self.previous.lexeme.len - 1]);
+    const value: Value = .{ .obj = try str.obj.create(VM.obj_allocator) };
+    try self.compiler.emitConstant(value);
 }
 
 fn unary(self: *Parser) !void {

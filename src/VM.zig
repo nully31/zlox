@@ -20,9 +20,9 @@ pub const InterpretError = error{ INTERPRET_COMPILE_ERROR, INTERPRET_RUNTIME_ERR
 
 // TODO: consider making them struct members rather than namespaced global variables?
 // var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-// pub const const_allocator = gpa.allocator();
+// pub const obj_allocator = gpa.allocator();
 var g_arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-pub const const_allocator = g_arena.allocator();
+pub const obj_allocator = g_arena.allocator();
 pub var objects: ?*Object = null;
 
 chunk: *Chunk = undefined,
@@ -170,7 +170,7 @@ fn run(self: *VM) !InterpretResult {
             .LESS => try self.binaryOp('<'),
             .ADD => {
                 if (self.peek(0).isString() and self.peek(1).isString()) {
-                    try self.concatenate();
+                    try self.concatenate(obj_allocator);
                 } else if (self.peek(0).isNumber() and self.peek(1).isNumber()) {
                     const b = self.pop().number;
                     const a = self.pop().number;
@@ -226,12 +226,12 @@ fn isFalsey(value: Value) bool {
     return value.isNil() or (value.isBool() and !value.boolean);
 }
 
-fn concatenate(self: *VM) !void {
-    const b = self.pop().obj.string;
-    const a = self.pop().obj.string;
-    const new_chars = try const_allocator.alloc(u8, a.chars.len + b.chars.len);
+fn concatenate(self: *VM, allocator: Allocator) !void {
+    const b = self.pop().obj.as(ObjString).?;
+    const a = self.pop().obj.as(ObjString).?;
+    const new_chars = try allocator.alloc(u8, a.chars.len + b.chars.len);
     @memcpy(new_chars[0..a.chars.len], a.chars);
     @memcpy(new_chars[a.chars.len..], b.chars);
-    const result: Object = .{ .string = try ObjString.takeString(new_chars) };
-    self.push(Value{ .obj = result });
+    const new_obj = try ObjString.takeString(allocator, new_chars);
+    self.push(Value{ .obj = new_obj });
 }

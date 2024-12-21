@@ -2,7 +2,6 @@ const std = @import("std");
 const object = @import("object.zig");
 const Object = object.Object;
 const ObjString = object.ObjString;
-const ObjType = object.ObjType;
 
 /// A constant's type that zlox handles.
 pub const ValueType = enum(u8) { boolean, nil, number, obj };

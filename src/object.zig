@@ -3,7 +3,7 @@ const VM = @import("VM.zig");
 const Allocator = std.mem.Allocator;
 
 /// List of `Object` type variants.
-pub const ObjType = enum(u8) { string };
+const ObjType = enum(u8) { string };
 
 /// Object interface struct.
 /// Any object implements this interface also has to have
@@ -45,7 +45,7 @@ pub const Object = struct {
     }
 
     /// Returns a pointer to the parent struct of type `T`.
-    /// If `T` doesn't match the type of parent object, it returns `null`.
+    /// If `T` doesn't match the type of the parent object, it returns `null`.
     pub fn as(self: *Object, comptime T: type) ?*T {
         if (self.type != T.tag) return null;
         // Obtain the name of `Object` field in the parent struct.
@@ -75,8 +75,8 @@ pub const ObjString = struct {
 
     fn create(object: *Object, allocator: Allocator) anyerror!*Object {
         const self: *ObjString = @fieldParentPtr("obj", object);
-        const t = try self.copyString(allocator);
-        return &t.obj;
+        const str = try self.copyString(allocator);
+        return &str.obj;
     }
 
     fn destroy(object: *Object, allocator: Allocator) void {
@@ -106,25 +106,26 @@ pub const ObjString = struct {
     }
 
     fn allocateString(allocator: Allocator, ptr: []u8) !*ObjString {
-        const object = try allocator.create(ObjString);
-        object.chars = ptr;
-        object.obj = Object.init(ObjString);
-        return object;
+        const str = try allocator.create(ObjString);
+        str.chars = ptr;
+        str.obj = Object.init(ObjString);
+        return str;
     }
 
-    /// Claims ownership of an already allocated string.
-    pub fn takeString(allocator: Allocator, chars: []u8) !*ObjString {
-        return allocateString(allocator, chars);
+    /// Allocates a new `ObjeString` object and claims ownership of an already allocated string.
+    pub fn takeString(allocator: Allocator, chars: []u8) !*Object {
+        const str = try allocateString(allocator, chars);
+        return &str.obj;
     }
 };
 
 test "string object" {
     var string = ObjString.init("test");
-    var obj = try string.obj.create(VM.const_allocator);
+    const obj = try string.obj.create(VM.obj_allocator);
     try std.testing.expect(obj.is(ObjString));
     std.debug.print("\n", .{});
     obj.print();
     std.debug.print("{s}", .{obj.as(ObjString).?.chars});
     std.debug.print("\n", .{});
-    obj.destroy(VM.const_allocator);
+    obj.destroy(VM.obj_allocator);
 }
