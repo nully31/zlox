@@ -37,8 +37,23 @@ pub const Object = struct {
         return self.vtable.destroy(self, allocator);
     }
 
+    /// Should be pretty much self explanatory.
     pub fn print(self: *Object) void {
         return self.vtable.print(self);
+    }
+
+    /// Returns a pointer to the parent struct of type `T`.
+    /// If `T` doesn't have any `Object` field (which it should), it throws a compile error.
+    pub fn as(self: *Object, comptime T: type) *T {
+        comptime var obj_field: ?[:0]const u8 = null;
+        const info = std.meta.fields(T);
+        inline for (info) |field| {
+            obj_field = switch (field.type) {
+                Object => field.name,
+                inline else => null,
+            };
+        }
+        return if (obj_field) |name| @as(*T, @fieldParentPtr(name, self)) else @compileError("no 'Object' type field in the passed type.");
     }
 
     pub fn is(self: *Object, V: ObjType) bool {
@@ -104,6 +119,7 @@ test "string object" {
     try std.testing.expect(obj.is(ObjType.string));
     std.debug.print("\n", .{});
     obj.print();
+    std.debug.print("{s}", .{obj.as(ObjString).chars});
     std.debug.print("\n", .{});
     obj.destroy(VM.const_allocator);
 }
