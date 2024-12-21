@@ -10,7 +10,7 @@ pub const Value = union(ValueType) {
     boolean: bool,
     nil: void,
     number: f64,
-    obj: Object,
+    obj: *Object,
 
     /// Returns whether this value is of type `T`.
     inline fn is(self: Value, comptime T: ValueType) bool {
@@ -31,14 +31,14 @@ pub const Value = union(ValueType) {
 
     pub fn isString(self: Value) bool {
         if (!self.is(ValueType.obj)) return false;
-        return self.obj.is(ObjType.string);
+        return self.obj.is(ObjString);
     }
 
     pub fn isEqual(self: Value, b: Value) bool {
         return switch (self) {
             .obj => |a| blk: {
                 if (!self.isString() or !b.isString()) break :blk false;
-                break :blk std.mem.eql(u8, a.string.chars, b.obj.string.chars);
+                break :blk std.mem.eql(u8, a.as(ObjString).?.chars, b.obj.as(ObjString).?.chars);
             },
             else => std.meta.eql(self, b),
         };
@@ -50,7 +50,6 @@ pub const Value = union(ValueType) {
             .nil => std.debug.print("nil", .{}),
             .number => |n| std.debug.print("{d}", .{n}),
             .obj => |o| o.print(),
-            // else => return,
         }
     }
 };
@@ -81,12 +80,12 @@ test "compare strings" {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     const allocator = gpa.allocator();
     var string = ObjString.init("test1");
-    const a: Value = .{ .obj = try Object.create(string, allocator) };
+    const a: Value = .{ .obj = try string.obj.create(allocator) };
     var b = a;
     try std.testing.expect(a.isEqual(b));
 
     string = ObjString.init("test2");
-    b = Value{ .obj = try Object.create(string, allocator) };
+    b = Value{ .obj = try string.obj.create(allocator) };
     try std.testing.expect(!a.isEqual(b));
 
     b = Value{ .boolean = false };
