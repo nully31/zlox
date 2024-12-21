@@ -10,6 +10,7 @@ const ObjType = enum(u8) { string };
 /// an `ObjType` member with the name `tag` (for now).
 pub const Object = struct {
     type: ObjType,
+    next: ?*Object,
     vtable: *const VTable = undefined,
 
     const VTable = struct {
@@ -21,6 +22,7 @@ pub const Object = struct {
     pub fn init(comptime T: type) Object {
         return .{
             .type = T.tag,
+            .next = null,
             .vtable = &.{
                 .create = T.create,
                 .destroy = T.destroy,
@@ -31,7 +33,9 @@ pub const Object = struct {
 
     /// Allocates self object onto heap.
     pub fn create(self: *Object, allocator: Allocator) anyerror!*Object {
-        return try self.vtable.create(self, allocator);
+        const obj = self.vtable.create(self, allocator) catch |err| return err;
+        VM.MMU.register(obj);
+        return obj;
     }
 
     /// Free self object.
@@ -112,20 +116,21 @@ pub const ObjString = struct {
         return str;
     }
 
-    /// Allocates a new `ObjeString` object and claims ownership of an already allocated string.
+    /// Allocates a new `ObjString` object and claims ownership of an already allocated string.
     pub fn takeString(allocator: Allocator, chars: []u8) !*Object {
         const str = try allocateString(allocator, chars);
+        VM.MMU.register(&str.obj);
         return &str.obj;
     }
 };
 
 test "string object" {
     var string = ObjString.init("test");
-    const obj = try string.obj.create(VM.obj_allocator);
+    const obj = try string.obj.create(VM.MMU.obj_allocator);
     try std.testing.expect(obj.is(ObjString));
     std.debug.print("\n", .{});
     obj.print();
     std.debug.print("{s}", .{obj.as(ObjString).?.chars});
     std.debug.print("\n", .{});
-    obj.destroy(VM.obj_allocator);
+    obj.destroy(VM.MMU.obj_allocator);
 }

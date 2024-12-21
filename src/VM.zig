@@ -18,35 +18,53 @@ const VM = @This();
 pub const InterpretResult = enum { INTERPRET_OK };
 pub const InterpretError = error{ INTERPRET_COMPILE_ERROR, INTERPRET_RUNTIME_ERROR };
 
-// TODO: consider making them struct members rather than namespaced global variables?
-// var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-// pub const obj_allocator = gpa.allocator();
-var g_arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-pub const obj_allocator = g_arena.allocator();
-pub var objects: ?*Object = null;
+// TODO: consider making them struct fields rather than namespaced global variables?
+pub const MMU = struct {
+    var gpa = std.heap.GeneralPurposeAllocator(.{}){};
+    pub const obj_allocator = gpa.allocator();
+    pub var obj_list: ?*Object = null;
 
-chunk: *Chunk = undefined,
-ip: usize = undefined, // The intruction pointer points at the next byte to be read
-stack: [config.stack_max]Value = undefined,
-stack_top: usize = undefined, // This points at the first *not-in-use* element of the stack
+    /// Register a newly allocated object to the list so VM can free it via `freeObjects()`.
+    pub inline fn register(object: *Object) void {
+        object.next = obj_list;
+        obj_list = object;
+    }
+
+    /// Free objects on the list.
+    pub fn freeObjects() void {
+        var it = obj_list;
+        while (it) |obj| {
+            const next = obj.next;
+            obj.destroy(obj_allocator);
+            it = next;
+        }
+    }
+};
+
+chunk: *Chunk,
+ip: usize, // The intruction pointer points at the next byte to be read
+stack: [config.stack_max]Value,
+stack_top: usize, // This points at the first *not-in-use* element of the stack
 
 pub fn init() VM {
-    var self = VM{};
+    var self = VM{
+        .chunk = undefined,
+        .ip = undefined,
+        .stack = undefined,
+        .stack_top = undefined,
+    };
     self.resetStack();
     return self;
 }
 
 pub fn deinit(self: *VM) void {
-    defer _ = g_arena.deinit();
+    defer _ = MMU.gpa.deinit();
+    MMU.freeObjects();
     self.resetStack();
 }
 
 inline fn resetStack(self: *VM) void {
     self.stack_top = 0;
-}
-
-inline fn freeObjects(self: *VM) !void {
-    _ = self;
 }
 
 /// Runs VM in interactive mode, predominantly known as "REPL" (Read-Eval-Print-Loop).
@@ -170,7 +188,7 @@ fn run(self: *VM) !InterpretResult {
             .LESS => try self.binaryOp('<'),
             .ADD => {
                 if (self.peek(0).isString() and self.peek(1).isString()) {
-                    try self.concatenate(obj_allocator);
+                    try self.concatenate(MMU.obj_allocator);
                 } else if (self.peek(0).isNumber() and self.peek(1).isNumber()) {
                     const b = self.pop().number;
                     const a = self.pop().number;
