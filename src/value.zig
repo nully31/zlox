@@ -4,12 +4,13 @@ const Object = object.Object;
 const ObjString = object.ObjString;
 
 /// A constant's type that zlox handles.
-pub const ValueType = enum(u8) { boolean, nil, number, obj };
 pub const Value = union(ValueType) {
     boolean: bool,
     nil: void,
     number: f64,
     obj: *Object,
+
+    const ValueType = enum(u8) { boolean, nil, number, obj };
 
     /// Returns whether this value is of type `T`.
     inline fn is(self: Value, comptime T: ValueType) bool {

@@ -5,7 +5,6 @@ const Compiler = @import("Compiler.zig");
 const debug = @import("debug.zig");
 const config = @import("config.zig");
 const Value = @import("value.zig").Value;
-const ValueType = @import("value.zig").ValueType;
 const Object = @import("object.zig").Object;
 const ObjString = @import("object.zig").ObjString;
 const Opcode = Chunk.Opcode;
