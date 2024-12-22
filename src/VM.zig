@@ -30,7 +30,7 @@ pub const MMU = struct {
     }
 
     /// Free objects on the list.
-    pub fn freeObjects() void {
+    pub fn free() void {
         var it = obj_list;
         while (it) |obj| {
             const next = obj.next;
@@ -58,7 +58,7 @@ pub fn init() VM {
 
 pub fn deinit(self: *VM) void {
     defer _ = MMU.gpa.deinit();
-    MMU.freeObjects();
+    MMU.free();
     self.resetStack();
 }
 

@@ -1,5 +1,6 @@
 const std = @import("std");
 const VM = @import("VM.zig");
+const hash_table = @import("hash_table.zig");
 const Allocator = std.mem.Allocator;
 
 /// List of `Object` type variants.
@@ -73,6 +74,7 @@ pub const Object = struct {
 /// A variant of `Object` type that can hold a string.
 pub const ObjString = struct {
     chars: []u8,
+    hash: u32 = undefined,
     obj: Object,
 
     const tag = ObjType.string;
@@ -103,22 +105,27 @@ pub const ObjString = struct {
 
     /// Allocates the attached string onto heap, then allocates the object itself.
     /// Uses the same allocator for allocating both.
+    /// In lox, strings are immutable so we can calculate its hash upfront
+    /// and attach to the object as cache.
     fn copyString(self: ObjString, allocator: Allocator) !*ObjString {
+        const hash = hash_table.hashString(self.chars);
         const ptr = try allocator.alloc(u8, self.chars.len);
         std.mem.copyForwards(u8, ptr, self.chars);
-        return try allocateString(allocator, ptr);
+        return try allocateString(allocator, ptr, hash);
     }
 
-    fn allocateString(allocator: Allocator, ptr: []u8) !*ObjString {
+    fn allocateString(allocator: Allocator, ptr: []u8, hash: u32) !*ObjString {
         const str = try allocator.create(ObjString);
         str.chars = ptr;
+        str.hash = hash;
         str.obj = Object.init(ObjString);
         return str;
     }
 
-    /// Allocates a new `ObjString` object and claims ownership of an already allocated string.
+    /// Allocates a new `ObjString` object and claims ownership of an preallocated string.
     pub fn takeString(allocator: Allocator, chars: []u8) !*Object {
-        const str = try allocateString(allocator, chars);
+        const hash = hash_table.hashString(chars);
+        const str = try allocateString(allocator, chars, hash);
         VM.MMU.register(&str.obj);
         return &str.obj;
     }
