@@ -8,7 +8,7 @@ const ObjType = enum(u8) { string };
 
 /// Object interface struct.
 /// Any object implements this interface also has to have
-/// an `ObjType` member with the name `tag` (for now).
+/// an `ObjType` member with the name `tag`.
 pub const Object = struct {
     type: ObjType,
     next: ?*Object,
@@ -22,6 +22,8 @@ pub const Object = struct {
 
     pub fn init(comptime T: type) Object {
         return .{
+            // here an external independent enum `ObjType` needs to be used, otherwise
+            // this whole struct has to be comptime which does not seem feasible.
             .type = T.tag,
             .next = null,
             .vtable = &.{
@@ -52,7 +54,7 @@ pub const Object = struct {
     /// Returns a pointer to the parent struct of type `T`.
     /// If `T` doesn't match the type of the parent object, it returns `null`.
     pub fn as(self: *Object, comptime T: type) ?*T {
-        if (self.type != T.tag) return null;
+        if (self.type != T.tag) return null; // cannot properly evaluate `self.type` at comptime
         // Obtain the name of `Object` field in the parent struct.
         comptime var obj_field: ?[:0]const u8 = null;
         const fields = std.meta.fields(T);

@@ -17,19 +17,19 @@ const VM = @This();
 pub const InterpretResult = enum { INTERPRET_OK };
 pub const InterpretError = error{ INTERPRET_COMPILE_ERROR, INTERPRET_RUNTIME_ERROR };
 
-// TODO: consider making them struct fields rather than namespaced global variables?
+/// Global struct for memory management (e.g. garbage collection)
 pub const MMU = struct {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
     pub const obj_allocator = gpa.allocator();
     pub var obj_list: ?*Object = null;
 
-    /// Register a newly allocated object to the list so VM can free it via `freeObjects()`.
+    /// Register a newly allocated object to the list so VM can free it by calling `MMU.free()`.
     pub inline fn register(object: *Object) void {
         object.next = obj_list;
         obj_list = object;
     }
 
-    /// Free objects on the list.
+    /// Free all objects in the list.
     pub fn free() void {
         var it = obj_list;
         while (it) |obj| {
