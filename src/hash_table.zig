@@ -31,6 +31,14 @@ pub const Table = struct {
         self.* = Table.init(self.allocator);
     }
 
+    /// Retrieve value corresponding to the given key.
+    /// Returns null if the key doesn't exist in the table.
+    pub fn tableGet(self: *Table, K: *ObjString) ?Value {
+        if (self.count == 0) return null;
+        const entry = self.findEntry(K);
+        if (entry.key) |_| return entry.value else null;
+    }
+
     /// Put a new entry into the hash table.
     /// It utilizes open addressing and linear probing as its collision resolution.
     pub fn tableSet(self: *Table, K: *ObjString, V: Value) !bool {
@@ -46,7 +54,14 @@ pub const Table = struct {
         return is_new;
     }
 
-    /// Figures out which bucket the entry with the key belongs in.
+    /// Copy all the content of a table to another.
+    pub fn tableAddAll(from: *Table, to: *Table) !void {
+        for (from.entries) |*entry| {
+            if (entry.key) |k| _ = try to.tableSet(k, entry.value);
+        }
+    }
+
+    /// Figure out which bucket the entry with the key belongs in.
     fn findEntry(self: *Table, K: *ObjString) *Entry {
         var index: usize = K.hash % self.entries.len;
         // loop doesn't go indefinitely here since there will always be empty buckets thanks to the load factor threshold.
@@ -57,6 +72,7 @@ pub const Table = struct {
         }
     }
 
+    /// Reconstruct the hash table after resizing as entries depends on array size for their buckets.
     fn adjustCapacity(self: *Table, capacity: usize) !void {
         const entries: []Entry = try self.allocator.realloc(self.entries, capacity);
         // initialize the new table.
@@ -66,12 +82,13 @@ pub const Table = struct {
         }
         // re-insert every entry to the new table.
         for (self.entries) |*entry| {
-            if (entry.key) |K| {
-                const dest = self.findEntry(K);
+            if (entry.key) |k| {
+                const dest = self.findEntry(k);
                 dest.key = entry.key;
                 dest.value = entry.value;
             }
         }
+        _ = self.allocator.realloc(self.entries, 0) catch unreachable; // free always suceeds
         self.entries = entries;
     }
 };
