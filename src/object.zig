@@ -22,7 +22,7 @@ pub const Object = struct {
 
     pub fn init(comptime T: type) Object {
         return .{
-            // here an external independent enum `ObjType` needs to be used, otherwise
+            // Here an external independent enum `ObjType` needs to be used, otherwise
             // this whole struct has to be comptime which does not seem feasible.
             .type = T.tag,
             .next = null,

@@ -237,7 +237,7 @@ fn errorAt(self: *Parser, token: *Token, message: []const u8) void {
     if (token.type == TokenType.EOF) {
         std.debug.print(" at end", .{});
     } else if (token.type == TokenType.ERROR) {
-        // Nothing
+        // nothing
     } else {
         std.debug.print(" at '{s}'", .{token.lexeme});
     }
