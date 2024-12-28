@@ -41,9 +41,9 @@ pub const MMU = struct {
 };
 
 chunk: *Chunk,
-ip: usize, // The intruction pointer points at the next byte to be read
+ip: usize, // intruction pointer points at the next byte to be read
 stack: [config.stack_max]Value,
-stack_top: usize, // This points at the first *not-in-use* element of the stack
+stack_top: usize, // points at the first *not-in-use* element of the stack
 
 pub fn init() VM {
     var self = VM{
