@@ -20,21 +20,21 @@ pub const InterpretError = error{ INTERPRET_COMPILE_ERROR, INTERPRET_RUNTIME_ERR
 /// Global struct for memory management (e.g. garbage collection)
 pub const MMU = struct {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    pub const obj_allocator = gpa.allocator();
-    pub var obj_list: ?*Object = null;
+    pub const allocator = gpa.allocator();
+    var list: ?*Object = null; // list of allocated objects
 
     /// Register a newly allocated object to the list so VM can free it by calling `MMU.free()`.
     pub inline fn register(object: *Object) void {
-        object.next = obj_list;
-        obj_list = object;
+        object.next = list;
+        list = object;
     }
 
     /// Free all objects in the list.
     pub fn free() void {
-        var it = obj_list;
+        var it = list;
         while (it) |obj| {
             const next = obj.next;
-            obj.destroy(obj_allocator);
+            obj.destroy(allocator);
             it = next;
         }
     }
@@ -187,7 +187,7 @@ fn run(self: *VM) !InterpretResult {
             .LESS => try self.binaryOp('<'),
             .ADD => {
                 if (self.peek(0).isString() and self.peek(1).isString()) {
-                    try self.concatenate(MMU.obj_allocator);
+                    try self.concatenate(MMU.allocator);
                 } else if (self.peek(0).isNumber() and self.peek(1).isNumber()) {
                     const b = self.pop().number;
                     const a = self.pop().number;
