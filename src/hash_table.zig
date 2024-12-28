@@ -40,7 +40,7 @@ pub const Table = struct {
     }
 
     /// Put a new entry into the hash table.
-    /// It utilizes open addressing and linear probing as its collision resolution.
+    /// It utilizes open addressing and linear probing for collision resolution.
     pub fn set(self: *Table, K: *ObjString, V: Value) !bool {
         if (@as(f64, @floatFromInt(self.count + 1)) > @as(f64, @floatFromInt(self.entries.len)) * max_load) {
             const new_capacity = if (self.entries.len < 8) 8 else self.entries.len * 2;
@@ -48,7 +48,7 @@ pub const Table = struct {
         }
         const entry = self.findEntry(K);
         const is_new = entry.key == null;
-        if (is_new) self.count += 1;
+        if (is_new and entry.value.isNil()) self.count += 1; // replacing a tombstone with a new entry doesn't increase the count as it's been already accounted for
         entry.key = K;
         entry.value = V;
         return is_new;
@@ -59,7 +59,7 @@ pub const Table = struct {
         if (self.count == 0) return false;
         const entry = self.findEntry(K);
         if (entry.key) |_| {
-            // place a tombston in the entry.
+            // Place a tombstone in the entry.
             entry.key = null;
             entry.value = .{ .boolean = true };
             return true;
@@ -77,18 +77,18 @@ pub const Table = struct {
     fn findEntry(self: *Table, K: *ObjString) *Entry {
         var index: usize = K.hash % self.entries.len;
         var tombstone: ?*Entry = null;
-        // loop here doesn't go indefinitely since there will always be empty buckets thanks to the load factor threshold.
+        // Loop here doesn't go indefinitely since there will always be empty buckets thanks to the load factor threshold.
         while (true) : (index = (index + 1) % self.entries.len) {
             const entry = &self.entries[index];
             if (entry.key) |k| {
-                // found the entry.
+                // Found the entry.
                 if (K == k) return entry;
             } else {
                 if (entry.value.isNil()) {
-                    // empty entry.
+                    // Empty entry.
                     return if (tombstone) |t| t else entry;
                 } else {
-                    // found a tombstone.
+                    // Found a tombstone.
                     if (tombstone == null) tombstone = entry;
                 }
             }
@@ -98,17 +98,19 @@ pub const Table = struct {
     /// Reconstruct the hash table after resizing as entries depends on array size for their buckets.
     fn adjustCapacity(self: *Table, capacity: usize) !void {
         const entries: []Entry = try self.allocator.realloc(self.entries, capacity);
-        // initialize the new table.
+        // Initialize the new table.
+        self.count = 0; // we don't copy the tombstones over
         for (entries) |*entry| {
             entry.*.key = null;
             entry.*.value = .{ .nil = {} };
         }
-        // re-insert every entry to the new table.
+        // Re-insert every entry to the new table.
         for (self.entries) |*entry| {
             if (entry.key) |k| {
                 const dest = self.findEntry(k);
                 dest.key = entry.key;
                 dest.value = entry.value;
+                self.count += 1;
             }
         }
         _ = self.allocator.realloc(self.entries, 0) catch unreachable; // free always suceeds
