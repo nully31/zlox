@@ -33,7 +33,7 @@ pub const Table = struct {
 
     /// Retrieve value corresponding to the given key.
     /// Returns null if the key doesn't exist in the table.
-    pub fn tableGet(self: *Table, K: *ObjString) ?Value {
+    pub fn get(self: *Table, K: *ObjString) ?Value {
         if (self.count == 0) return null;
         const entry = self.findEntry(K);
         if (entry.key) |_| return entry.value else null;
@@ -41,7 +41,7 @@ pub const Table = struct {
 
     /// Put a new entry into the hash table.
     /// It utilizes open addressing and linear probing as its collision resolution.
-    pub fn tableSet(self: *Table, K: *ObjString, V: Value) !bool {
+    pub fn set(self: *Table, K: *ObjString, V: Value) !bool {
         if (@as(f64, @floatFromInt(self.count + 1)) > @as(f64, @floatFromInt(self.entries.len)) * max_load) {
             const new_capacity = if (self.entries.len < 8) 8 else self.entries.len * 2;
             try self.adjustCapacity(new_capacity);
@@ -54,8 +54,20 @@ pub const Table = struct {
         return is_new;
     }
 
+    /// Delete an entry.
+    pub fn delete(self: *Table, K: *ObjString) bool {
+        if (self.count == 0) return false;
+        const entry = self.findEntry(K);
+        if (entry.key) |_| {
+            // place a tombston in the entry.
+            entry.key = null;
+            entry.value = .{ .boolean = true };
+            return true;
+        } else return false;
+    }
+
     /// Copy all the content of a table to another.
-    pub fn tableAddAll(from: *Table, to: *Table) !void {
+    pub fn addAll(from: *Table, to: *Table) !void {
         for (from.entries) |*entry| {
             if (entry.key) |k| _ = try to.tableSet(k, entry.value);
         }
@@ -64,11 +76,22 @@ pub const Table = struct {
     /// Figure out which bucket the entry with the key belongs in.
     fn findEntry(self: *Table, K: *ObjString) *Entry {
         var index: usize = K.hash % self.entries.len;
-        // loop doesn't go indefinitely here since there will always be empty buckets thanks to the load factor threshold.
+        var tombstone: ?*Entry = null;
+        // loop here doesn't go indefinitely since there will always be empty buckets thanks to the load factor threshold.
         while (true) : (index = (index + 1) % self.entries.len) {
             const entry = &self.entries[index];
-            if (entry.key == K or entry.key == null)
-                return entry;
+            if (entry.key) |k| {
+                // found the entry.
+                if (K == k) return entry;
+            } else {
+                if (entry.value.isNil()) {
+                    // empty entry.
+                    return if (tombstone) |t| t else entry;
+                } else {
+                    // found a tombstone.
+                    if (tombstone == null) tombstone = entry;
+                }
+            }
         }
     }
 
@@ -112,13 +135,14 @@ test "test hash" {
     var string = ObjString.init("test");
     var obj = try string.obj.create(allocator);
     var map = Table.init(allocator);
-    _ = try map.tableSet(obj.as(ObjString).?, .{ .boolean = true });
+    _ = try map.set(obj.as(ObjString).?, .{ .boolean = true });
     const e = map.findEntry(obj.as(ObjString).?);
     std.debug.print("\n", .{});
     e.key.?.obj.print();
     std.debug.print("\n", .{});
     e.value.print();
     std.debug.print("\n", .{});
+    try std.testing.expect(map.delete(e.key.?));
     map.destroy();
     obj.destroy(allocator);
 }
