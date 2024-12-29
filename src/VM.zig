@@ -4,11 +4,13 @@ const ValueArray = @import("ValueArray.zig");
 const Compiler = @import("Compiler.zig");
 const debug = @import("debug.zig");
 const config = @import("config.zig");
+const hash_table = @import("hash_table.zig");
 const Value = @import("value.zig").Value;
 const Object = @import("object.zig").Object;
 const ObjString = @import("object.zig").ObjString;
 const Opcode = Chunk.Opcode;
 const Allocator = std.mem.Allocator;
+const Table = hash_table.Table;
 
 /// A stack-based virtual machine struct.
 /// Use `init()` to initialize the VM instance.
@@ -44,6 +46,7 @@ chunk: *Chunk,
 ip: usize, // intruction pointer points at the next byte to be read
 stack: [config.stack_max]Value,
 stack_top: usize, // points at the first *not-in-use* element of the stack
+strings: Table,
 
 pub fn init() VM {
     var self = VM{
@@ -51,6 +54,7 @@ pub fn init() VM {
         .ip = undefined,
         .stack = undefined,
         .stack_top = undefined,
+        .strings = Table.init(),
     };
     self.resetStack();
     return self;
