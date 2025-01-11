@@ -135,11 +135,11 @@ pub const ObjString = struct {
 
 test "string object" {
     var string = ObjString.init("test");
-    const obj = try string.obj.create(VM.MMU.allocator);
+    const obj = try string.obj.create(VM.MMU.obj_allocator);
     try std.testing.expect(obj.is(ObjString));
     std.debug.print("\n", .{});
     obj.print();
     std.debug.print("{s}", .{obj.as(ObjString).?.chars});
     std.debug.print("\n", .{});
-    obj.destroy(VM.MMU.allocator);
+    obj.destroy(VM.MMU.obj_allocator);
 }

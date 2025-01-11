@@ -22,7 +22,10 @@ pub const InterpretError = error{ INTERPRET_COMPILE_ERROR, INTERPRET_RUNTIME_ERR
 /// Global struct for memory management (e.g. garbage collection)
 pub const MMU = struct {
     var gpa = std.heap.GeneralPurposeAllocator(.{}){};
-    pub const allocator = gpa.allocator();
+    var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
+    pub const obj_allocator = gpa.allocator(); // for objects
+    pub const hash_allocator = arena.allocator(); // for hash table entries
+
     var list: ?*Object = null; // list of allocated objects
 
     /// Register a newly allocated object to the list so VM can free it by calling `MMU.free()`.
@@ -32,11 +35,11 @@ pub const MMU = struct {
     }
 
     /// Free all objects in the list.
-    pub fn free() void {
+    pub fn freeObjects() void {
         var it = list;
         while (it) |obj| {
             const next = obj.next;
-            obj.destroy(allocator);
+            obj.destroy(obj_allocator);
             it = next;
         }
     }
@@ -54,15 +57,18 @@ pub fn init() VM {
         .ip = undefined,
         .stack = undefined,
         .stack_top = undefined,
-        .strings = Table.init(),
+        .strings = Table.init(MMU.hash_allocator),
     };
     self.resetStack();
     return self;
 }
 
 pub fn deinit(self: *VM) void {
-    defer _ = MMU.gpa.deinit();
-    MMU.free();
+    defer {
+        _ = MMU.gpa.deinit();
+        _ = MMU.arena.deinit();
+    }
+    MMU.freeObjects();
     self.resetStack();
 }
 
@@ -191,7 +197,7 @@ fn run(self: *VM) !InterpretResult {
             .LESS => try self.binaryOp('<'),
             .ADD => {
                 if (self.peek(0).isString() and self.peek(1).isString()) {
-                    try self.concatenate(MMU.allocator);
+                    try self.concatenate(MMU.obj_allocator);
                 } else if (self.peek(0).isNumber() and self.peek(1).isNumber()) {
                     const b = self.pop().number;
                     const a = self.pop().number;

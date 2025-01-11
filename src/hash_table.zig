@@ -5,9 +5,6 @@ const Allocator = std.mem.Allocator;
 const ObjString = object.ObjString;
 const Value = value.Value;
 
-// A hash table owns its allocator itself.
-var arena = std.heap.ArenaAllocator.init(std.heap.page_allocator);
-
 pub const Entry = struct {
     key: ?*ObjString,
     value: Value,
@@ -21,11 +18,11 @@ pub const Table = struct {
     /// Table's load factor threshold to increase the capacity.
     const max_load: f64 = 0.75;
 
-    pub fn init() Table {
+    pub fn init(allocator: Allocator) Table {
         return .{
             .count = 0,
             .entries = &.{},
-            .allocator = arena.allocator(),
+            .allocator = allocator,
         };
     }
 
