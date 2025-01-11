@@ -128,7 +128,7 @@ pub const ObjString = struct {
         return str;
     }
 
-    /// Allocates a new `ObjString` object and claims ownership of an preallocated string.
+    /// Allocates a new `ObjString` object and claims ownership of the preallocated `chars`.
     pub fn takeString(allocator: Allocator, chars: []u8) !*Object {
         const hash = hash_table.hashString(chars);
         const interned = VM.MMU.strings.findString(chars, hash);

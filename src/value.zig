@@ -36,6 +36,8 @@ pub const Value = union(ValueType) {
 
     pub fn isEqual(self: Value, b: Value) bool {
         return switch (self) {
+            // No need to compare the string content here as it's guaranteed to be unique
+            // in each object thanks to string interning, so pointer comparison is enough.
             inline else => std.meta.eql(self, b),
         };
     }
