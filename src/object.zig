@@ -76,7 +76,7 @@ pub const Object = struct {
 /// A variant of `Object` type that can hold a string.
 pub const ObjString = struct {
     chars: []u8,
-    hash: u32 = undefined,
+    hash: u32 = undefined, // In lox, strings are immutable so we can calculate its hash upfront and attach to the object as cache.
     obj: Object,
 
     const tag = ObjType.string;
@@ -106,27 +106,36 @@ pub const ObjString = struct {
     }
 
     /// Allocates the attached string onto heap, then allocates the object itself.
-    /// Uses the same allocator for allocating both.
-    /// In lox, strings are immutable so we can calculate its hash upfront
-    /// and attach to the object as cache.
+    /// If the string is already interned, it returns the interned string.
     fn copyString(self: ObjString, allocator: Allocator) !*ObjString {
         const hash = hash_table.hashString(self.chars);
         const ptr = try allocator.alloc(u8, self.chars.len);
         std.mem.copyForwards(u8, ptr, self.chars);
+        const interned = VM.MMU.strings.findString(self.chars, hash);
+        if (interned) |s| return s;
         return try allocateString(allocator, ptr, hash);
     }
 
+    /// Allocates a new `ObjString` object with the given string that's already allocated.
+    /// This function interns the string, thus it's caller's responsibility for checking
+    /// for duplicates before calling this function.
     fn allocateString(allocator: Allocator, ptr: []u8, hash: u32) !*ObjString {
         const str = try allocator.create(ObjString);
         str.chars = ptr;
         str.hash = hash;
         str.obj = Object.init(ObjString);
+        _ = try VM.MMU.strings.set(str, .{ .nil = {} }); // intern the string; value is not important
         return str;
     }
 
     /// Allocates a new `ObjString` object and claims ownership of an preallocated string.
     pub fn takeString(allocator: Allocator, chars: []u8) !*Object {
         const hash = hash_table.hashString(chars);
+        const interned = VM.MMU.strings.findString(chars, hash);
+        if (interned) |s| {
+            _ = allocator.realloc(chars, 0) catch unreachable; // free always succeeds
+            return &s.obj;
+        }
         const str = try allocateString(allocator, chars, hash);
         VM.MMU.register(&str.obj);
         return &str.obj;

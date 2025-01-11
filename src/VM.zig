@@ -26,6 +26,7 @@ pub const MMU = struct {
     pub const obj_allocator = gpa.allocator(); // for objects
     pub const hash_allocator = arena.allocator(); // for hash table entries
 
+    pub var strings: Table = Table.init(hash_allocator); // interned strings
     var list: ?*Object = null; // list of allocated objects
 
     /// Register a newly allocated object to the list so VM can free it by calling `MMU.free()`.
@@ -49,7 +50,6 @@ chunk: *Chunk,
 ip: usize, // intruction pointer points at the next byte to be read
 stack: [config.stack_max]Value,
 stack_top: usize, // points at the first *not-in-use* element of the stack
-strings: Table,
 
 pub fn init() VM {
     var self = VM{
@@ -57,7 +57,6 @@ pub fn init() VM {
         .ip = undefined,
         .stack = undefined,
         .stack_top = undefined,
-        .strings = Table.init(MMU.hash_allocator),
     };
     self.resetStack();
     return self;
@@ -69,6 +68,7 @@ pub fn deinit(self: *VM) void {
         _ = MMU.arena.deinit();
     }
     MMU.freeObjects();
+    MMU.strings.destroy();
     self.resetStack();
 }
 

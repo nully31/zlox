@@ -73,11 +73,26 @@ pub const Table = struct {
         }
     }
 
+    /// Retrieve the string object in the table with the given string and hash.
+    /// Returns null if the key doesn't exist in the table.
+    pub fn findString(self: *Table, string: []const u8, hash: u32) ?*ObjString {
+        if (self.count == 0) return null;
+        var index: usize = hash % self.entries.len;
+        while (true) : (index = (index + 1) % self.entries.len) {
+            const entry = &self.entries[index];
+            if (entry.key) |k| {
+                if (k.hash == hash and std.mem.eql(u8, k.chars, string)) return k;
+            } else {
+                if (entry.value.isNil()) return null;
+            }
+        }
+    }
+
     /// Figure out which bucket the entry with the key belongs in.
     fn findEntry(self: *Table, K: *ObjString) *Entry {
         var index: usize = K.hash % self.entries.len;
         var tombstone: ?*Entry = null;
-        // Loop here doesn't go indefinitely since there will always be empty buckets thanks to the load factor threshold.
+        // Loop here doesn't go indefinitely since there will always be empty buckets due to the load factor threshold.
         while (true) : (index = (index + 1) % self.entries.len) {
             const entry = &self.entries[index];
             if (entry.key) |k| {

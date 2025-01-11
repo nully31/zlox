@@ -36,11 +36,7 @@ pub const Value = union(ValueType) {
 
     pub fn isEqual(self: Value, b: Value) bool {
         return switch (self) {
-            .obj => |a| blk: {
-                if (!self.isString() or !b.isString()) break :blk false;
-                break :blk std.mem.eql(u8, a.as(ObjString).?.chars, b.obj.as(ObjString).?.chars);
-            },
-            else => std.meta.eql(self, b),
+            inline else => std.meta.eql(self, b),
         };
     }
 
