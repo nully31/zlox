@@ -39,7 +39,7 @@ pub fn parse(self: *Parser, compiler: *Compiler) !void {
     self.compiler = compiler;
 
     self.advance();
-    while (!self.match(TokenType.EOF)) {
+    while (!self.match(.EOF)) {
         try self.declaration();
     }
 }
@@ -53,7 +53,7 @@ fn advance(self: *Parser) void {
 
     while (true) {
         self.current = self.compiler.scanner.scanToken();
-        if (self.current.type != TokenType.ERROR) break;
+        if (self.current.type != .ERROR) break;
 
         self.errorAtCurrent(self.current.lexeme);
     }
@@ -87,7 +87,9 @@ fn check(self: *Parser, T: TokenType) bool {
 ///
 /// `declaration` -> `varDecl` | `statement` ;
 fn declaration(self: *Parser) !void {
-    try self.statement();
+    if (self.match(.VAR)) {} else {
+        try self.statement();
+    }
 
     if (self.panic_mode) self.synchronize();
 }
@@ -96,7 +98,7 @@ fn declaration(self: *Parser) !void {
 ///
 /// `statement` -> `exprStmt` | `printStmt` ;
 fn statement(self: *Parser) !void {
-    if (self.match(TokenType.PRINT)) {
+    if (self.match(.PRINT)) {
         try self.printStatement();
     } else {
         try self.expressionStatement();
@@ -105,19 +107,19 @@ fn statement(self: *Parser) !void {
 
 fn printStatement(self: *Parser) !void {
     try self.expression();
-    self.consume(TokenType.SEMICOLON, "Expect ';' after value.");
+    self.consume(.SEMICOLON, "Expect ';' after value.");
     try self.compiler.emitByte(Opcode.PRINT.toByte());
 }
 
 fn expressionStatement(self: *Parser) !void {
     try self.expression();
-    self.consume(TokenType.SEMICOLON, "Expect ';' after expression.");
+    self.consume(.SEMICOLON, "Expect ';' after expression.");
     try self.compiler.emitByte(Opcode.POP.toByte());
 }
 
 /// Starts parsing expression with the second highest precedence.
 fn expression(self: *Parser) !void {
-    try self.parsePrecedence(Precedence.ASSIGNMENT);
+    try self.parsePrecedence(.ASSIGNMENT);
 }
 
 /// Core of the Pratt Parser.
@@ -176,7 +178,7 @@ fn literal(self: *Parser) !void {
 
 fn grouping(self: *Parser) !void {
     try self.expression();
-    self.consume(TokenType.RIGHT_PAREN, "Expect ')' after expression.");
+    self.consume(.RIGHT_PAREN, "Expect ')' after expression.");
 }
 
 fn number(self: *Parser) !void {
@@ -194,7 +196,7 @@ fn unary(self: *Parser) !void {
     const operator_type = self.previous.type;
 
     // Compile the operand
-    try self.parsePrecedence(Precedence.UNARY);
+    try self.parsePrecedence(.UNARY);
 
     // Emit the operator instruction
     switch (operator_type) {
@@ -230,46 +232,46 @@ const ParseRule = struct {
     /// Table for the Pratt parser.
     /// Rows need to be in sync with `TokenType` variants.
     const rules = [_]ParseRule{
-        .{ .prefix = grouping, .infix = null, .precedence = Precedence.NONE }, // LEFT_PAREN
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // RIGHT_PAREN
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // LEFT_BRACE
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // RIGHT BRACE
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // COMMA
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // DOT
-        .{ .prefix = unary, .infix = binary, .precedence = Precedence.TERM }, // MINUS
-        .{ .prefix = null, .infix = binary, .precedence = Precedence.TERM }, // PLUS
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // SEMICOLON
-        .{ .prefix = null, .infix = binary, .precedence = Precedence.FACTOR }, // SLASH
-        .{ .prefix = null, .infix = binary, .precedence = Precedence.FACTOR }, // STAR
-        .{ .prefix = unary, .infix = null, .precedence = Precedence.NONE }, // BANG
-        .{ .prefix = null, .infix = binary, .precedence = Precedence.EQUALITY }, // BANG_EQUAL
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // EQUAL
-        .{ .prefix = null, .infix = binary, .precedence = Precedence.EQUALITY }, // EQUAL_EQUAL
-        .{ .prefix = null, .infix = binary, .precedence = Precedence.COMPARISON }, // GREATER
-        .{ .prefix = null, .infix = binary, .precedence = Precedence.COMPARISON }, // GREATER_EQUAL
-        .{ .prefix = null, .infix = binary, .precedence = Precedence.COMPARISON }, // LESS
-        .{ .prefix = null, .infix = binary, .precedence = Precedence.COMPARISON }, // LESS_EQUAL
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // IDENTIFIER
-        .{ .prefix = string, .infix = null, .precedence = Precedence.NONE }, // STRING
-        .{ .prefix = number, .infix = null, .precedence = Precedence.NONE }, // NUMBER
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // AND
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // CLASS
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // ELSE
-        .{ .prefix = literal, .infix = null, .precedence = Precedence.NONE }, // FALSE
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // FOR
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // FUN
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // IF
-        .{ .prefix = literal, .infix = null, .precedence = Precedence.NONE }, // NIL
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // OR
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // PRINT
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // RETURN
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // SUPER
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // THIS
-        .{ .prefix = literal, .infix = null, .precedence = Precedence.NONE }, // TRUE
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // VAR
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // WHILE
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // ERROR
-        .{ .prefix = null, .infix = null, .precedence = Precedence.NONE }, // EOF
+        .{ .prefix = grouping, .infix = null, .precedence = .NONE }, // LEFT_PAREN
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // RIGHT_PAREN
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // LEFT_BRACE
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // RIGHT BRACE
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // COMMA
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // DOT
+        .{ .prefix = unary, .infix = binary, .precedence = .TERM }, // MINUS
+        .{ .prefix = null, .infix = binary, .precedence = .TERM }, // PLUS
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // SEMICOLON
+        .{ .prefix = null, .infix = binary, .precedence = .FACTOR }, // SLASH
+        .{ .prefix = null, .infix = binary, .precedence = .FACTOR }, // STAR
+        .{ .prefix = unary, .infix = null, .precedence = .NONE }, // BANG
+        .{ .prefix = null, .infix = binary, .precedence = .EQUALITY }, // BANG_EQUAL
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // EQUAL
+        .{ .prefix = null, .infix = binary, .precedence = .EQUALITY }, // EQUAL_EQUAL
+        .{ .prefix = null, .infix = binary, .precedence = .COMPARISON }, // GREATER
+        .{ .prefix = null, .infix = binary, .precedence = .COMPARISON }, // GREATER_EQUAL
+        .{ .prefix = null, .infix = binary, .precedence = .COMPARISON }, // LESS
+        .{ .prefix = null, .infix = binary, .precedence = .COMPARISON }, // LESS_EQUAL
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // IDENTIFIER
+        .{ .prefix = string, .infix = null, .precedence = .NONE }, // STRING
+        .{ .prefix = number, .infix = null, .precedence = .NONE }, // NUMBER
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // AND
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // CLASS
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // ELSE
+        .{ .prefix = literal, .infix = null, .precedence = .NONE }, // FALSE
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // FOR
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // FUN
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // IF
+        .{ .prefix = literal, .infix = null, .precedence = .NONE }, // NIL
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // OR
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // PRINT
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // RETURN
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // SUPER
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // THIS
+        .{ .prefix = literal, .infix = null, .precedence = .NONE }, // TRUE
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // VAR
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // WHILE
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // ERROR
+        .{ .prefix = null, .infix = null, .precedence = .NONE }, // EOF
     };
 };
 
@@ -283,9 +285,9 @@ fn errorAt(self: *Parser, token: *Token, message: []const u8) void {
     self.panic_mode = true;
     std.debug.print("[line {d}] Error", .{token.line});
 
-    if (token.type == TokenType.EOF) {
+    if (token.type == .EOF) {
         std.debug.print(" at end", .{});
-    } else if (token.type == TokenType.ERROR) {
+    } else if (token.type == .ERROR) {
         // nothing
     } else {
         std.debug.print(" at '{s}'", .{token.lexeme});
@@ -309,8 +311,8 @@ fn synchronize(self: *Parser) void {
     self.panic_mode = false;
     // Skips tokens indiscriminately until it reaches something that looks like
     // a statement boundary (e.g. semicolon, control flow or declaration keywords).
-    while (self.current.type != TokenType.EOF) {
-        if (self.previous.type == TokenType.SEMICOLON) return;
+    while (self.current.type != .EOF) {
+        if (self.previous.type == .SEMICOLON) return;
         switch (self.current.type) {
             .CLASS, .FUN, .VAR, .FOR, .IF, .WHILE, .PRINT, .RETURN => return,
             else => {},
