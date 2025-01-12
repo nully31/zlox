@@ -97,8 +97,8 @@ fn match(self: *Scanner, expected: u8) bool {
     return true;
 }
 
-fn makeToken(self: *Scanner, @"type": TokenType) Token {
-    return .{ .type = @"type", .lexeme = self.source[self.start..self.current], .line = self.line };
+fn makeToken(self: *Scanner, T: TokenType) Token {
+    return .{ .type = T, .lexeme = self.source[self.start..self.current], .line = self.line };
 }
 
 fn errorToken(self: *Scanner, message: []const u8) Token {
@@ -179,11 +179,11 @@ fn identifierType(self: *Scanner) TokenType {
 /// Once a prefix is found that it could only be one possible reserved word,
 /// this method checks if BOTH the length of the lexeme and the remaining characters match
 /// to ensure the scanning token is the correct keyword and returns the corresponding token type.
-fn checkKeyword(self: *Scanner, comptime start: usize, comptime length: usize, comptime rest: []const u8, comptime @"type": TokenType) TokenType {
+fn checkKeyword(self: *Scanner, comptime start: usize, comptime length: usize, comptime rest: []const u8, comptime T: TokenType) TokenType {
     if (self.current - self.start == start + length and
         std.mem.eql(u8, self.source[self.start + start .. self.start + start + length], rest))
     {
-        return @"type";
+        return T;
     }
 
     return TokenType.IDENTIFIER;

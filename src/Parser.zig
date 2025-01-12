@@ -46,6 +46,8 @@ pub fn parse(self: *Parser, compiler: *Compiler) !void {
 
 /// Steps forward through the token stream.
 /// It asks the scanner for the next token and stores it for later use.
+///
+/// It sets the error flag and prints the lexeme string upon encountering an error token.
 fn advance(self: *Parser) void {
     self.previous = self.current;
 
@@ -100,7 +102,8 @@ fn expressionStatement(self: *Parser) !void {
     try self.compiler.emitByte(Opcode.POP.toByte());
 }
 
-/// Consumes next token whilst validating its type at the same time.
+/// Consumes current token after validating its type.
+/// If fails, it sets the error flag and print the passed message.
 fn consume(self: *Parser, T: TokenType, message: []const u8) void {
     if (self.current.type == T) {
         self.advance();
@@ -268,7 +271,7 @@ const ParseRule = struct {
     };
 };
 
-/// Prints where the error occurred.
+/// Prints out where the error occurred.
 /// Sets the error flag and going panic mode instead of immediately returning compile error,
 /// because we want to resynchronize and keep on parsing.
 /// Thus, after a first error is detected, any other errors will get suppressed.
