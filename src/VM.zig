@@ -188,6 +188,7 @@ fn run(self: *VM) !InterpretResult {
             .NIL => self.push(Value{ .nil = {} }),
             .TRUE => self.push(Value{ .boolean = true }),
             .FALSE => self.push(Value{ .boolean = false }),
+            .POP => _ = self.pop(),
             .EQUAL => {
                 const b = self.pop();
                 const a = self.pop();

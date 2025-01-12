@@ -83,6 +83,8 @@ fn declaration(self: *Parser) !void {
 fn statement(self: *Parser) !void {
     if (self.match(TokenType.PRINT)) {
         try self.printStatement();
+    } else {
+        try self.expressionStatement();
     }
 }
 
@@ -90,6 +92,12 @@ fn printStatement(self: *Parser) !void {
     try self.expression();
     self.consume(TokenType.SEMICOLON, "Expect ';' after value.");
     try self.compiler.emitByte(Opcode.PRINT.toByte());
+}
+
+fn expressionStatement(self: *Parser) !void {
+    try self.expression();
+    self.consume(TokenType.SEMICOLON, "Expect ';' after expression.");
+    try self.compiler.emitByte(Opcode.POP.toByte());
 }
 
 /// Consumes next token whilst validating its type at the same time.
