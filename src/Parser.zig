@@ -188,7 +188,7 @@ fn number(self: *Parser) !void {
 
 fn string(self: *Parser) !void {
     var str = ObjString.init(self.previous.lexeme[1 .. self.previous.lexeme.len - 1]);
-    const value: Value = .{ .obj = try str.obj.create(VM.MMU.obj_allocator) };
+    const value: Value = .{ .obj = try str.obj.create() };
     try self.compiler.emitConstant(value);
 }
 

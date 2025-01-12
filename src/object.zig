@@ -2,6 +2,7 @@ const std = @import("std");
 const VM = @import("VM.zig");
 const hash_table = @import("hash_table.zig");
 const Allocator = std.mem.Allocator;
+const MMU = VM.MMU;
 
 /// List of `Object` type variants.
 const ObjType = enum(u8) { string };
@@ -11,12 +12,13 @@ const ObjType = enum(u8) { string };
 /// an `ObjType` member with the name `tag`.
 pub const Object = struct {
     type: ObjType,
+    allocator: Allocator,
     next: ?*Object,
     vtable: *const VTable = undefined,
 
     const VTable = struct {
-        create: *const fn (self: *Object, allocator: Allocator) anyerror!*Object,
-        destroy: *const fn (self: *Object, allocator: Allocator) void,
+        create: *const fn (self: *Object) anyerror!*Object,
+        destroy: *const fn (self: *Object) void,
         print: *const fn (self: *Object) void,
     };
 
@@ -25,6 +27,7 @@ pub const Object = struct {
             // Here an external independent enum `ObjType` needs to be used, otherwise
             // this whole struct has to be comptime which does not seem feasible.
             .type = T.tag,
+            .allocator = MMU.obj_allocator,
             .next = null,
             .vtable = &.{
                 .create = T.create,
@@ -35,15 +38,15 @@ pub const Object = struct {
     }
 
     /// Allocates self object onto heap.
-    pub fn create(self: *Object, allocator: Allocator) anyerror!*Object {
-        const obj = self.vtable.create(self, allocator) catch |err| return err;
-        VM.MMU.register(obj);
+    pub fn create(self: *Object) anyerror!*Object {
+        const obj = self.vtable.create(self) catch |err| return err;
+        MMU.register(obj);
         return obj;
     }
 
     /// Free self object.
-    pub fn destroy(self: *Object, allocator: Allocator) void {
-        return self.vtable.destroy(self, allocator);
+    pub fn destroy(self: *Object) void {
+        return self.vtable.destroy(self);
     }
 
     /// Should be pretty much self explanatory.
@@ -81,16 +84,16 @@ pub const ObjString = struct {
 
     const tag = ObjType.string;
 
-    fn create(object: *Object, allocator: Allocator) anyerror!*Object {
+    fn create(object: *Object) anyerror!*Object {
         const self: *ObjString = @fieldParentPtr("obj", object);
-        const str = try self.copyString(allocator);
+        const str = try self.copyString(object.allocator);
         return &str.obj;
     }
 
-    fn destroy(object: *Object, allocator: Allocator) void {
+    fn destroy(object: *Object) void {
         const self: *ObjString = @fieldParentPtr("obj", object);
-        _ = allocator.realloc(self.chars, 0) catch unreachable; // free always succeeds
-        allocator.destroy(self);
+        _ = object.allocator.realloc(self.chars, 0) catch unreachable; // free always succeeds
+        object.allocator.destroy(self);
     }
 
     fn print(object: *Object) void {
@@ -107,11 +110,11 @@ pub const ObjString = struct {
 
     /// Allocates the attached string onto heap, then allocates the object itself.
     /// If the string is already interned, it returns the interned string.
-    fn copyString(self: ObjString, allocator: Allocator) !*ObjString {
+    fn copyString(self: *ObjString, allocator: Allocator) !*ObjString {
         const hash = hash_table.hashString(self.chars);
         const ptr = try allocator.alloc(u8, self.chars.len);
         std.mem.copyForwards(u8, ptr, self.chars);
-        const interned = VM.MMU.strings.findString(self.chars, hash);
+        const interned = MMU.strings.findString(self.chars, hash);
         if (interned) |s| return s;
         return try allocateString(allocator, ptr, hash);
     }
@@ -124,31 +127,31 @@ pub const ObjString = struct {
         str.chars = ptr;
         str.hash = hash;
         str.obj = Object.init(ObjString);
-        _ = try VM.MMU.strings.set(str, .{ .nil = {} }); // intern the string; value is not important
+        _ = try MMU.strings.set(str, .{ .nil = {} }); // intern the string; value is not important
         return str;
     }
 
     /// Allocates a new `ObjString` object and claims ownership of the preallocated `chars`.
     pub fn takeString(allocator: Allocator, chars: []u8) !*Object {
         const hash = hash_table.hashString(chars);
-        const interned = VM.MMU.strings.findString(chars, hash);
+        const interned = MMU.strings.findString(chars, hash);
         if (interned) |s| {
             _ = allocator.realloc(chars, 0) catch unreachable; // free always succeeds
             return &s.obj;
         }
         const str = try allocateString(allocator, chars, hash);
-        VM.MMU.register(&str.obj);
+        MMU.register(&str.obj);
         return &str.obj;
     }
 };
 
 test "string object" {
     var string = ObjString.init("test");
-    const obj = try string.obj.create(VM.MMU.obj_allocator);
+    const obj = try string.obj.create();
     try std.testing.expect(obj.is(ObjString));
     std.debug.print("\n", .{});
     obj.print();
     std.debug.print("{s}", .{obj.as(ObjString).?.chars});
     std.debug.print("\n", .{});
-    obj.destroy(VM.MMU.obj_allocator);
+    obj.destroy();
 }
