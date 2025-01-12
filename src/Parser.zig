@@ -59,6 +59,17 @@ fn advance(self: *Parser) void {
     }
 }
 
+/// Consumes current token after validating its type.
+/// If fails, it sets the error flag and print the passed message.
+fn consume(self: *Parser, T: TokenType, message: []const u8) void {
+    if (self.current.type == T) {
+        self.advance();
+        return;
+    }
+
+    self.errorAtCurrent(message);
+}
+
 /// Check the type of the current token.
 /// If matches, it will consume the token and return `true`.
 /// Otherwise, it leaves the token alone and returns `false`.
@@ -77,6 +88,8 @@ fn check(self: *Parser, T: TokenType) bool {
 /// `declaration` -> `varDecl` | `statement` ;
 fn declaration(self: *Parser) !void {
     try self.statement();
+
+    if (self.panic_mode) self.synchronize();
 }
 
 /// Compile a statement.
@@ -100,17 +113,6 @@ fn expressionStatement(self: *Parser) !void {
     try self.expression();
     self.consume(TokenType.SEMICOLON, "Expect ';' after expression.");
     try self.compiler.emitByte(Opcode.POP.toByte());
-}
-
-/// Consumes current token after validating its type.
-/// If fails, it sets the error flag and print the passed message.
-fn consume(self: *Parser, T: TokenType, message: []const u8) void {
-    if (self.current.type == T) {
-        self.advance();
-        return;
-    }
-
-    self.errorAtCurrent(message);
 }
 
 /// Starts parsing expression with the second highest precedence.
@@ -299,4 +301,20 @@ pub fn @"error"(self: *Parser, message: []const u8) void {
 
 pub fn errorAtCurrent(self: *Parser, message: []const u8) void {
     self.errorAt(&self.current, message);
+}
+
+/// Error synchronization to minimize the number of cascaded compile errors.
+/// It exits panic mode upon reaching a synchronization point (i.e. statement boundaries).
+fn synchronize(self: *Parser) void {
+    self.panic_mode = false;
+    // Skips tokens indiscriminately until it reaches something that looks like
+    // a statement boundary (e.g. semicolon, control flow or declaration keywords).
+    while (self.current.type != TokenType.EOF) {
+        if (self.previous.type == TokenType.SEMICOLON) return;
+        switch (self.current.type) {
+            .CLASS, .FUN, .VAR, .FOR, .IF, .WHILE, .PRINT, .RETURN => return,
+            else => {},
+        }
+        self.advance();
+    }
 }
