@@ -44,6 +44,19 @@ pub fn parse(self: *Parser, compiler: *Compiler) !void {
     }
 }
 
+/// Check the type of the current token.
+/// If matches, it will consume the token and return `true`.
+/// Otherwise, it leaves the token alone and returns `false`.
+fn match(self: *Parser, T: TokenType) bool {
+    if (!self.check(T)) return false;
+    self.advance();
+    return true;
+}
+
+fn check(self: *Parser, T: TokenType) bool {
+    return self.current.type == T;
+}
+
 /// Steps forward through the token stream.
 /// It asks the scanner for the next token and stores it for later use.
 ///
@@ -60,27 +73,14 @@ fn advance(self: *Parser) void {
 }
 
 /// Consumes current token after validating its type.
-/// If fails, it sets the error flag and print the passed message.
-fn consume(self: *Parser, T: TokenType, message: []const u8) void {
+/// If fails, it sets the error flag and print the passed error message.
+fn consume(self: *Parser, T: TokenType, error_message: []const u8) void {
     if (self.current.type == T) {
         self.advance();
         return;
     }
 
-    self.errorAtCurrent(message);
-}
-
-/// Check the type of the current token.
-/// If matches, it will consume the token and return `true`.
-/// Otherwise, it leaves the token alone and returns `false`.
-fn match(self: *Parser, T: TokenType) bool {
-    if (!self.check(T)) return false;
-    self.advance();
-    return true;
-}
-
-fn check(self: *Parser, T: TokenType) bool {
-    return self.current.type == T;
+    self.errorAtCurrent(error_message);
 }
 
 /// Compile a declaration.
@@ -280,7 +280,7 @@ const ParseRule = struct {
 /// because we want to resynchronize and keep on parsing.
 /// Thus, after a first error is detected, any other errors will get suppressed.
 /// Panic mode ends when the parser hits a synchronization point (i.e. statement boundaries).
-fn errorAt(self: *Parser, token: *Token, message: []const u8) void {
+fn errorAt(self: *Parser, token: *Token, error_message: []const u8) void {
     if (self.panic_mode) return;
     self.panic_mode = true;
     std.debug.print("[line {d}] Error", .{token.line});
@@ -293,16 +293,16 @@ fn errorAt(self: *Parser, token: *Token, message: []const u8) void {
         std.debug.print(" at '{s}'", .{token.lexeme});
     }
 
-    std.debug.print(": {s}\n", .{message});
+    std.debug.print(": {s}\n", .{error_message});
     self.had_error = true;
 }
 
-pub fn @"error"(self: *Parser, message: []const u8) void {
-    self.errorAt(&self.previous, message);
+pub fn @"error"(self: *Parser, error_message: []const u8) void {
+    self.errorAt(&self.previous, error_message);
 }
 
-pub fn errorAtCurrent(self: *Parser, message: []const u8) void {
-    self.errorAt(&self.current, message);
+pub fn errorAtCurrent(self: *Parser, error_message: []const u8) void {
+    self.errorAt(&self.current, error_message);
 }
 
 /// Error synchronization to minimize the number of cascaded compile errors.

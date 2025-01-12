@@ -101,10 +101,10 @@ fn makeToken(self: *Scanner, T: TokenType) Token {
     return .{ .type = T, .lexeme = self.source[self.start..self.current], .line = self.line };
 }
 
-fn errorToken(self: *Scanner, message: []const u8) Token {
+fn errorToken(self: *Scanner, error_message: []const u8) Token {
     return .{
         .type = .ERROR,
-        .lexeme = message,
+        .lexeme = error_message,
         .line = self.line,
     };
 }
