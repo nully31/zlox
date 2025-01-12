@@ -39,8 +39,9 @@ pub fn parse(self: *Parser, compiler: *Compiler) !void {
     self.compiler = compiler;
 
     self.advance();
-    try self.expression();
-    self.consume(TokenType.EOF, "Expect end of expression.");
+    while (!self.match(TokenType.EOF)) {
+        try self.declaration();
+    }
 }
 
 /// Steps forward through the token stream.
@@ -56,19 +57,54 @@ fn advance(self: *Parser) void {
     }
 }
 
-/// Starts parsing with the second highest precedence.
-fn expression(self: *Parser) !void {
-    try self.parsePrecedence(Precedence.ASSIGNMENT);
+/// Check the type of the current token.
+/// If matches, it will consume the token and return `true`.
+/// Otherwise, it leaves the token alone and returns `false`.
+fn match(self: *Parser, T: TokenType) bool {
+    if (!self.check(T)) return false;
+    self.advance();
+    return true;
+}
+
+fn check(self: *Parser, T: TokenType) bool {
+    return self.current.type == T;
+}
+
+/// Compile a declaration.
+///
+/// `declaration` -> `varDecl` | `statement` ;
+fn declaration(self: *Parser) !void {
+    try self.statement();
+}
+
+/// Compile a statement.
+///
+/// `statement` -> `exprStmt` | `printStmt` ;
+fn statement(self: *Parser) !void {
+    if (self.match(TokenType.PRINT)) {
+        try self.printStatement();
+    }
+}
+
+fn printStatement(self: *Parser) !void {
+    try self.expression();
+    self.consume(TokenType.SEMICOLON, "Expect ';' after value.");
+    try self.compiler.emitByte(Opcode.PRINT.toByte());
 }
 
 /// Consumes next token whilst validating its type at the same time.
-fn consume(self: *Parser, @"type": TokenType, message: []const u8) void {
-    if (self.current.type == @"type") {
+fn consume(self: *Parser, T: TokenType, message: []const u8) void {
+    if (self.current.type == T) {
         self.advance();
         return;
     }
 
     self.errorAtCurrent(message);
+}
+
+/// Starts parsing expression with the second highest precedence.
+fn expression(self: *Parser) !void {
+    try self.parsePrecedence(Precedence.ASSIGNMENT);
 }
 
 /// Core of the Pratt Parser.
@@ -174,8 +210,8 @@ const ParseRule = struct {
     infix: ?ParseFn,
     precedence: Precedence,
 
-    fn getRule(@"type": TokenType) *const ParseRule {
-        return &rules[@intFromEnum(@"type")];
+    fn getRule(T: TokenType) *const ParseRule {
+        return &rules[@intFromEnum(T)];
     }
 
     /// Table for the Pratt parser.

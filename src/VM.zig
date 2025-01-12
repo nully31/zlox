@@ -218,11 +218,11 @@ fn run(self: *VM) !InterpretResult {
                 }
                 self.push(Value{ .number = -self.pop().number });
             },
-            .RETURN => {
-                // Note: to be changed later
+            .PRINT => {
                 self.pop().print();
                 std.debug.print("\n", .{});
-
+            },
+            .RETURN => {
                 return InterpretResult.INTERPRET_OK;
             },
             _ => continue,

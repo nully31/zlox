@@ -37,6 +37,7 @@ pub fn disassembleInstruction(chunk: *Chunk, offset: usize) usize {
         .DIVIDE => return simpleInstruction(@tagName(opcode), offset),
         .NOT => return simpleInstruction(@tagName(opcode), offset),
         .NEGATE => return simpleInstruction(@tagName(opcode), offset),
+        .PRINT => return simpleInstruction(@tagName(opcode), offset),
         .RETURN => return simpleInstruction(@tagName(opcode), offset),
         _ => {
             std.debug.print("Unknown opcode {d}\n", .{instruction});

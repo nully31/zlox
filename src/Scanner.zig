@@ -216,7 +216,7 @@ fn string(self: *Scanner) Token {
     return self.makeToken(TokenType.STRING);
 }
 
-/// Types of tokens.
+/// Type of tokens.
 pub const TokenType = enum {
     // Single character tokens
     LEFT_PAREN,
