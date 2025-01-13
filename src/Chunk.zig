@@ -8,37 +8,6 @@ const Allocator = std.mem.Allocator;
 /// The same allocator is also used for initializing the `constants` member.
 const Chunk = @This();
 
-/// Opcode enum.
-pub const Opcode = enum(u8) {
-    CONSTANT,
-    NIL,
-    TRUE,
-    FALSE,
-    POP,
-    EQUAL, // a != b can be written as !(a == b), thus no opcode for `!=`
-    GREATER, // a <= b <-> !(a > b)
-    LESS, // a >= b <-> !(a < b)
-    ADD,
-    SUBTRACT,
-    MULTIPLY,
-    DIVIDE,
-    NOT,
-    NEGATE,
-    PRINT,
-    RETURN,
-    _,
-
-    /// Returns a byte which represents the current opcode.
-    pub fn toByte(self: Opcode) u8 {
-        return @intFromEnum(self);
-    }
-
-    /// Returns an opcode literal equivalent to the given `byte`.
-    pub fn toOpcode(byte: u8) Opcode {
-        return @enumFromInt(byte);
-    }
-};
-
 count: usize = 0,
 code: []u8 = &.{},
 lines: []usize = &.{}, // Indicates which lines the instructions occur in the source code
@@ -100,6 +69,7 @@ test "write to a chunk" {
     }
 
     comptime var i = 0;
+    const Opcode = @import("opcode.zig").Opcode;
     inline while (i < 10) : (i += 1) {
         try chunk.write(Opcode.RETURN.toByte(), 123);
         const op = Opcode.toOpcode(chunk.code[i]);

@@ -8,7 +8,7 @@ const hash_table = @import("hash_table.zig");
 const Value = @import("value.zig").Value;
 const Object = @import("object.zig").Object;
 const ObjString = @import("object.zig").ObjString;
-const Opcode = Chunk.Opcode;
+const Opcode = @import("opcode.zig").Opcode;
 const Allocator = std.mem.Allocator;
 const Table = hash_table.Table;
 
@@ -226,7 +226,6 @@ fn run(self: *VM) !InterpretResult {
             .RETURN => {
                 return InterpretResult.INTERPRET_OK;
             },
-            _ => continue,
         }
     }
 }

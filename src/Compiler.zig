@@ -10,7 +10,7 @@ const Value = @import("value.zig").Value;
 const Allocator = std.mem.Allocator;
 const Token = Scanner.Token;
 const TokenType = Scanner.TokenType;
-const Opcode = Chunk.Opcode;
+const Opcode = @import("opcode.zig").Opcode;
 
 /// Compiler struct.
 const Compiler = @This();

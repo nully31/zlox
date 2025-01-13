@@ -4,7 +4,7 @@ const ValueArray = @import("ValueArray.zig");
 const VM = @import("VM.zig");
 const debug = @import("debug.zig");
 const Allocator = std.mem.Allocator;
-const Opcode = Chunk.Opcode;
+const Opcode = @import("opcode.zig").Opcode;
 
 const MainError = error{argsTooMany};
 
