@@ -15,7 +15,7 @@ pub fn init(allocator: Allocator) ValueArray {
     return .{ .allocator = allocator };
 }
 
-pub fn get(self: *ValueArray, index: u8) Value {
+pub fn read(self: *ValueArray, index: u8) Value {
     return self.values[index];
 }
 
@@ -41,5 +41,5 @@ pub fn deinit(self: *ValueArray) void {
 
 /// Prints a value read from the specified index in the pool
 pub fn print(self: *ValueArray, index: u8) void {
-    self.get(index).print();
+    self.read(index).print();
 }

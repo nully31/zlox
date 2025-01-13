@@ -87,11 +87,24 @@ fn consume(self: *Parser, T: TokenType, error_message: []const u8) void {
 ///
 /// `declaration` -> `varDecl` | `statement` ;
 fn declaration(self: *Parser) !void {
-    if (self.match(.VAR)) {} else {
+    if (self.match(.VAR)) {
+        try self.varDeclaration();
+    } else {
         try self.statement();
     }
 
     if (self.panic_mode) self.synchronize();
+}
+
+fn varDeclaration(self: *Parser) !void {
+    const global = try self.parseVariable("Expect variable name.");
+    if (self.match(.EQUAL)) {
+        try self.expression();
+    } else {
+        try self.compiler.emitByte(Opcode.NIL.toByte()); // desugars `var a;` into `var a = nil;`
+    }
+    self.consume(.SEMICOLON, "Expect ';' after variable declaration.");
+    _ = global; // try self.defineVariable(global);
 }
 
 /// Compile a statement.
@@ -142,6 +155,20 @@ fn parsePrecedence(self: *Parser, precedence: Precedence) !void {
         const infix_rule = ParseRule.getRule(self.previous.type).infix;
         try infix_rule.?(self);
     }
+}
+
+fn parseVariable(self: *Parser, error_message: []const u8) !u8 {
+    self.consume(.IDENTIFIER, error_message);
+    return try self.identifierConstant(&self.previous);
+}
+
+fn identifierConstant(self: *Parser, name: *Token) !u8 {
+    var identifier = ObjString.init(name.lexeme);
+    return try self.compiler.makeConstant(.{ .obj = try identifier.obj.create() });
+}
+
+fn defineVariable(self: *Parser, global: u8) !void {
+    try self.compiler.emitBytes(Opcode.DEFINE_GLOBAL.toByte(), global);
 }
 
 fn binary(self: *Parser) !void {

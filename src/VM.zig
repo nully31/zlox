@@ -26,23 +26,40 @@ pub const MMU = struct {
     pub const obj_allocator = gpa.allocator(); // for objects
     pub const hash_allocator = arena.allocator(); // for hash table entries
 
-    pub var strings: Table = Table.init(hash_allocator); // interned strings
-    var list: ?*Object = null; // list of allocated objects
+    pub var globals: Table = undefined; // global variables
+    pub var strings: Table = undefined; // interned strings
+    var list: ?*Object = undefined; // list of allocated objects
 
-    /// Register a newly allocated object to the list so VM can free it by calling `MMU.free()`.
-    pub inline fn register(object: *Object) void {
-        object.next = list;
-        list = object;
+    fn init() void {
+        globals = Table.init(hash_allocator);
+        strings = Table.init(hash_allocator);
+        list = null;
+    }
+
+    fn deinit() void {
+        defer {
+            _ = gpa.deinit();
+            _ = arena.deinit();
+        }
+        globals.destroy();
+        strings.destroy();
+        freeObjects();
     }
 
     /// Free all objects in the list.
-    pub fn freeObjects() void {
+    fn freeObjects() void {
         var it = list;
         while (it) |obj| {
             const next = obj.next;
             obj.destroy();
             it = next;
         }
+    }
+
+    /// Register a newly allocated object to the list so VM can free it by calling `MMU.free()`.
+    pub inline fn register(object: *Object) void {
+        object.next = list;
+        list = object;
     }
 };
 
@@ -59,16 +76,12 @@ pub fn init() VM {
         .stack_top = undefined,
     };
     self.resetStack();
+    MMU.init();
     return self;
 }
 
 pub fn deinit(self: *VM) void {
-    defer {
-        _ = MMU.gpa.deinit();
-        _ = MMU.arena.deinit();
-    }
-    MMU.freeObjects();
-    MMU.strings.destroy();
+    MMU.deinit();
     self.resetStack();
 }
 
@@ -181,7 +194,7 @@ fn run(self: *VM) !InterpretResult {
         const opcode: Opcode = @enumFromInt(instruction);
         switch (opcode) {
             .CONSTANT => {
-                const constant = self.chunk.constants.get(self.chunk.read(self.ip));
+                const constant = self.chunk.constants.read(self.chunk.read(self.ip));
                 self.ip += 1;
                 self.push(constant);
             },
@@ -189,6 +202,11 @@ fn run(self: *VM) !InterpretResult {
             .TRUE => self.push(Value{ .boolean = true }),
             .FALSE => self.push(Value{ .boolean = false }),
             .POP => _ = self.pop(),
+            .DEFINE_GLOBAL => {
+                const name = self.chunk.constants.read(self.chunk.read(self.ip)).obj.as(ObjString).?;
+                _ = try MMU.globals.set(name, self.peek(0)); // simply lets the user redefine the existing global variable if any
+                _ = self.pop(); // pop at here so the string won't be erased by gc until having added it to the table
+            },
             .EQUAL => {
                 const b = self.pop();
                 const a = self.pop();

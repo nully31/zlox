@@ -5,6 +5,7 @@ pub const Opcode = enum(u8) {
     TRUE,
     FALSE,
     POP,
+    DEFINE_GLOBAL,
     EQUAL, // a != b can be written as !(a == b), thus no opcode for `!=`
     GREATER, // a <= b <-> !(a > b)
     LESS, // a >= b <-> !(a < b)
